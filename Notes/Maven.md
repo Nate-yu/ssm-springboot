@@ -337,3 +337,150 @@ Packaging定义规则：<br />指示将项目打包为什么类型的文件，id
 </build>
 ```
 
+# 4 Maven继承与聚合
+## 4.1 Maven工程继承关系
+>  Maven 继承是指在 Maven 的项目中，让一个项目从另一个项目中继承配置信息的机制。继承可以让我们在多个项目中共享同一配置信息，简化项目的管理和维护工作。  
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1692838822833-f29d10d5-03aa-48a2-a50a-f77c17a2c29f.png#averageHue=%23f1f1f1&clientId=ud3be9989-3cf8-4&from=paste&id=u922b1858&originHeight=410&originWidth=842&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=udb438fba-a08e-4e7e-9f8d-495a39e1600&title=)
+
+继承的作用： 在父工程中统一管理项目中的依赖信息，进行统一版本管理 <br />背景：
+
+- 对一个比较大型的项目进行了模块拆分。
+- 一个 project 下面，创建了很多个 module。
+- 每一个 module 都需要配置自己的依赖信息。
+
+它背后的需求是：
+
+- 多个模块要使用同一个框架，它们应该是同一个版本，所以整个项目中使用的框架版本需要统一管理。
+- 使用框架时所需要的 jar 包组合（或者说依赖信息组合）需要经过长期摸索和反复调试，最终确定一个可用组合。这个耗费很大精力总结出来的方案不应该在新的项目中重新摸索。
+
+通过在父工程中为整个项目维护依赖信息的组合既保证了整个项目使用规范、准确的 jar 包；又能够将以往的经验沉淀下来，节约时间和精力。
+
+语法：
+
+- 父工程
+```xml
+<groupId>com.hut.maven</groupId>
+<artifactId>pro03-maven-parent</artifactId>
+<version>1.0-SNAPSHOT</version>
+<!-- 当前工程作为父工程，它要去管理子工程，所以打包方式必须是 pom -->
+<packaging>pom</packaging>
+
+```
+
+- 子工程
+```xml
+<!-- 使用parent标签指定当前工程的父工程 -->
+<parent>
+  <!-- 父工程的坐标 -->
+  <groupId>com.hut.maven</groupId>
+  <artifactId>pro03-maven-parent</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</parent>
+
+<!-- 子工程的坐标 -->
+<!-- 如果子工程坐标中的groupId和version与父工程一致，那么可以省略 -->
+<!-- <groupId>com.atguigu.maven</groupId> -->
+<artifactId>pro04-maven-module</artifactId>
+<!-- <version>1.0-SNAPSHOT</version> -->
+```
+
+父工程依赖统一管理
+
+- 父工程声明版本
+```xml
+<!-- 使用dependencyManagement标签配置对依赖的管理 -->
+<!-- 被管理的依赖并没有真正被引入到工程 -->
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-expression</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+- 子工程引用版本
+```xml
+<!-- 子工程引用父工程中的依赖信息时，可以把版本号去掉。  -->
+<!-- 把版本号去掉就表示子工程中这个依赖的版本由父工程决定。 -->
+<!-- 具体来说是由父工程的dependencyManagement来决定。 -->
+<dependencies>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-core</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-beans</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-expression</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+  </dependency>
+</dependencies>
+```
+## 4.2 Maven工程聚合关系
+>  Maven 聚合是指将多个项目组织到一个父级项目中，通过触发父工程的构建，统一按顺序触发子工程构建的过程  
+
+作用：
+
+1.  统一管理子项目构建：通过聚合，可以将多个子项目组织在一起，方便管理和维护  
+2.  优化构建顺序：通过聚合，可以对多个项目进行顺序控制，避免出现构建依赖混乱导致构建失败的情况  
+
+语法：<br /> 父项目中包含的子项目列表
+```xml
+<project>
+  <groupId>com.example</groupId>
+  <artifactId>parent-project</artifactId>
+  <packaging>pom</packaging>
+  <version>1.0.0</version>
+  <modules>
+    <module>child-project1</module>
+    <module>child-project2</module>
+  </modules>
+</project>
+```
+
+聚合演示：<br />通过触发父工程构建命令、引发所有子模块构建  <br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1692839461597-b89e8ba6-cbba-456a-94e8-65bc5cd301e8.png#averageHue=%23f9f8f7&clientId=ud3be9989-3cf8-4&from=paste&id=u31531ffe&originHeight=421&originWidth=1010&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=uacc664b7-048b-474a-8066-a83950b48bd&title=)
+
+# 5 Maven核心总结
+| 核心点 | 掌握目标 |
+| --- | --- |
+| 安装 | maven安装、环境变量、maven配置文件修改 |
+| 工程创建 | gavp属性理解、JavaSE/EE工程创建、项目结构 |
+| 依赖管理 | 依赖添加、依赖传递、版本提取、导入依赖错误解决 |
+| 构建管理 | 构建过程、构建场景、构建周期等 |
+| 继承和聚合 | 理解继承和聚合作用、继承语法和实践、聚合语法和实践 |
+
+
