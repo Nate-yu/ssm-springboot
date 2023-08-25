@@ -346,3 +346,153 @@ public class DefaultServiceLocator {
 7. 图解IoC配置流程
 
 ![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1692932991551-2818137f-7666-4000-bad6-8d5f00de573f.png#averageHue=%23f8f4a3&clientId=u540cd631-9d29-4&from=paste&id=uc06a3eb7&originHeight=689&originWidth=1523&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u78a3beb2-a76f-4119-9f10-3c932f3f1fe&title=)
+
+### 4.2.2 实验二：组件（Bean）依赖注入配置（DI）
+
+1. 目标
+
+通过配置文件，实现IoC容器中Bean之间的引用（依赖注入DI配置）。<br />主要涉及注入场景：基于**构造函数**的依赖注入和基于 **Setter** 的依赖注入。
+
+2. 思路
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1692949646057-9cece577-760b-4a15-b78a-adeefd10c61c.png#averageHue=%23f7f7f7&clientId=u540cd631-9d29-4&from=paste&height=480&id=u11da8a6f&originHeight=640&originWidth=920&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u57f4dd52-bcc2-40f2-98cb-7a572144733&title=&width=690)
+
+3. 基于构造函数的依赖注入（单个构造参数）
+   1. 介绍： 基于构造函数的 DI 是通过容器调用具有多个参数的构造函数来完成的，每个参数表示一个依赖项。  
+   2. 准备组件类
+```java
+package com.hut.ioc_02;
+
+public class UserDao {
+}
+
+public class UserService {
+    
+    private UserDao userDao;
+
+    public UserService(UserDao userDao) {
+        this.userDao = userDao;
+    }
+}
+```
+
+   3. 编写配置文件
+
+文件：`resources/spring-02.xml`
+```xml
+<!--引用与被引用的组件必须全部在ioc容器中-->
+
+<!--1. 单个构造参数注入-->
+<!--步骤1：将他们都存放在ioc容器中-->
+<bean id="userDao" class="com.hut.ioc_02.UserDao"/>
+<bean id="userService" class="com.hut.ioc_02.UserService">
+  <!--步骤2：在标签内部指定构造参数传值，即DI的配置
+    <constructor-arg 构造参数传值的di配置
+      value 直接赋值属性值 String name = "hh" int age = 23
+      ref 引用其他的bean的Id值
+      以上两个二选一
+  -->
+  <constructor-arg ref="userDao"/>
+</bean>
+```
+
+   -  `constructor-arg`标签：可以引用构造参数 ref 引用其他bean的标识，也可以用 value 对参数直接赋值
+
+4. 基于构造函数的依赖注入（多构造参数解析）
+   1. 介绍： 基于构造函数的 DI 是通过容器调用具有多个参数的构造函数来完成的，每个参数表示一个依赖项  
+   2. 准备组件类
+```java
+public class UserDao {
+}
+
+
+public class UserService {
+
+    private UserDao userDao;
+
+    private int age;
+
+    private String name;
+
+    public UserService(int age , String name ,UserDao userDao) {
+        this.userDao = userDao;
+        this.age = age;
+        this.name = name;
+    }
+}
+```
+
+   3. 编写配置文件
+```xml
+<!--2. 多个构造参数注入-->
+<bean id="userService1" class="com.hut.ioc_02.UserService">
+  <!--方案1：构造参数的顺序填写值-->
+  <constructor-arg value="18"/>
+  <constructor-arg value="阿彬"/>
+  <constructor-arg ref="userDao"/>
+</bean>
+
+<bean id="userService2" class="com.hut.ioc_02.UserService">
+  <!--方案2：构造参数的名称填写，不用考虑顺序，name = 构造参数的名字-->
+  <constructor-arg name="name" value="yubin"/>
+  <constructor-arg name="age" value= "23"/>
+  <constructor-arg name="userDao" ref="userDao"/>
+</bean>
+
+<bean id="userService3" class="com.hut.ioc_02.UserService">
+  <!--方案3：构造参数的下角标指定填写，不用考虑顺序，index = 构造参数的下角标，从左至右，从0开始-->
+  <constructor-arg index="1" value="yubin"/>
+  <constructor-arg index="0" value= "23"/>
+  <constructor-arg index="2" ref="userDao"/>
+</bean>
+```
+
+   - constructor-arg标签：指定构造参数和对应的值
+   - constructor-arg标签：name属性指定参数名、index属性指定参数角标、value属性指定普通属性值
+
+5. 基于Setter方法依赖注入
+   1. 介绍： 开发中，除了构造函数注入（DI），更多的使用的Setter方法进行注入  
+   2. 准备组件类
+```java
+package com.hut.ioc_02;
+
+public class MovieFinder {
+}
+
+
+public class SimpleMovieLister {
+
+  private MovieFinder movieFinder;
+  
+  private String movieName;
+
+  public void setMovieFinder(MovieFinder movieFinder) {
+    this.movieFinder = movieFinder;
+  }
+  
+  public void setMovieName(String movieName){
+    this.movieName = movieName;
+  }
+
+  // business logic that actually uses the injected MovieFinder is omitted...
+}
+```
+
+   3. 编写配置文件
+```xml
+<!--3. 触发setter方法进行注入-->
+<bean id="movieFinder" class="com.hut.ioc_02.MovieFinder"/>
+<bean id="simpleMovieLister" class="com.hut.ioc_02.SimpleMovieLister">
+    <!--
+        name: 调用set方法的名
+        value / ref 二选一，value="直接属性值" ref="其他bean的Id"
+    -->
+    <property name="movieName" value="霸王别姬"/>
+    <property name="movieFinder" ref="movieFinder"/>
+</bean>
+```
+
+   - property标签： 可以给setter方法对应的属性赋值
+   - property 标签： name属性代表**set方法标识**、ref代表引用bean的标识id、value属性代表基本属性值
+
+**总结：**<br />  依赖注入（DI）包含引用类型和基本数据类型，同时注入的方式也有多种。主流的注入方式为**setter方法**注入和**构造函数**注入<br />  需要特别**注意**：引用其他bean，使用ref属性。直接注入基本类型值，使用value属性。
