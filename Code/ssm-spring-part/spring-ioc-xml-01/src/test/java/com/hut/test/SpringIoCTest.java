@@ -1,6 +1,7 @@
 package com.hut.test;
 
 import com.hut.ioc_03.HappyComponent;
+import com.hut.ioc_04.JavaBean2;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -51,5 +52,22 @@ public class SpringIoCTest {
 
         System.out.println(happyComponent == happyComponent1);
         System.out.println(happyComponent2 == happyComponent1);
+    }
+
+    /**
+     * 测试ioc配置和销毁方法的触发
+     */
+    @Test
+    public void test_04() {
+        // 1. 创建ioc容器，就会进行组件对象的实例化 -> init
+        ClassPathXmlApplicationContext classPathXmlApplicationContext = new ClassPathXmlApplicationContext("spring-04.xml");
+
+        // 单例与多例的测试
+        JavaBean2 bean = classPathXmlApplicationContext.getBean(JavaBean2.class);
+        JavaBean2 bean1 = classPathXmlApplicationContext.getBean(JavaBean2.class);
+        System.out.println(bean == bean1);
+
+        // 2. 正常结束ioc容器
+        classPathXmlApplicationContext.close();
     }
 }

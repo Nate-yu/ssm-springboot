@@ -548,3 +548,101 @@ public void getBeanFromIoC() {
     System.out.println(happyComponent2 == happyComponent1);
 }
 ```
+
+### 4.2.4 实验四：组件（Bean）作用域和周期方法配置
+
+1. 组件周期方法配置
+   1. 周期方法：我们可以在组件类中定义方法，然后当IoC容器实例化和销毁组件对象的时候进行调用。这两个方法我们成为生命周期方法，类似于Servlet的init/destroy方法，我们可以在周期方法完成初始化和释放资源等工作。
+   2. 周期方法声明
+```java
+public class JavaBean {
+
+    /**
+     * 方法必须是public void，且必须是是无参数
+     * 方法名随意
+     */
+    public void init() {
+        System.out.println("JavaBean init");
+    }
+
+    /**
+     * 销毁方法
+     */
+    public void clear() {
+        System.out.println("JavaBean clear");
+    }
+}
+```
+
+   3. 周期方法配置
+```xml
+<!--
+  init-method：指定类中的初始化方法
+  destroy-method：指定类中的销毁方法
+  spring ioc容器就会在对应的时间节点回调对应的方法
+-->
+<bean id="javaBean" class="com.hut.ioc_04.JavaBean" init-method="init" destroy-method="clear"/>
+```
+
+   4. 测试代码
+```java
+/**
+* 测试ioc配置和销毁方法的触发
+*/
+@Test
+public void test_04() {
+    // 1. 创建ioc容器，就会进行组件对象的实例化 -> init
+    ClassPathXmlApplicationContext classPathXmlApplicationContext = new ClassPathXmlApplicationContext("spring-04.xml");
+
+    // 2. 正常结束ioc容器
+    classPathXmlApplicationContext.close();
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693035917342-19c9ec05-1f18-4cf7-9294-8766ca8bb2f8.png#averageHue=%23282a2d&clientId=ub4bdb45a-4da7-4&from=paste&height=224&id=udcd1adb9&originHeight=280&originWidth=1081&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=30447&status=done&style=none&taskId=ufebecf4c-5dc4-4299-b5b3-b09b2b3a116&title=&width=864.8)
+
+2. 组件作用域配置
+   1. Bean作用域概念：`<bean`标签声明Bean，只是将Bean的信息配置给SpringIoC容器。在IoC容器中，这些`<bean`标签对应的信息转成Spring内部 `BeanDefinition`对象，`BeanDefinition`对象内，包含定义的信息（id,class,属性等等）这意味着，`BeanDefinition`与`类`概念一样，SpringIoC容器可以可以根据`BeanDefinition`对象反射创建多个Bean对象实例。具体创建多少个Bean的实例对象，由Bean的作用域Scope属性指定
+   2. 作用域可选值
+| 取值 | 含义 | 创建对象的时机 | 默认值 |
+| --- | --- | --- | --- |
+| singleton | 在 IOC 容器中，这个 bean 的对象始终为单实例 | IOC 容器初始化时 | 是 |
+| prototype | 这个 bean 在 IOC 容器中有多个实例 | 获取 bean 时 | 否 |
+
+
+如果是在WebApplicationContext环境下还会有另外两个作用域（但不常用）：
+
+| 取值 | 含义 | 创建对象的时机 | 默认值 |
+| --- | --- | --- | --- |
+| request | 请求范围内有效的实例 | 每次请求 | 否 |
+| session | 会话范围内有效的实例 | 每次会话 | 否 |
+
+   3. 作用域配置
+
+配置scope范围
+```xml
+<!--声明一个组件信息，默认是单例模式：bean在IOC容器中只有一个实例，IOC容器初始化时创建对象-->
+<bean id="javaBean2" class="com.hut.ioc_04.JavaBean2" scope="singleton"/>
+<!--多例模式：getBean一次，就会创建一个组件对象-->
+<bean id="javaBean2" class="com.hut.ioc_04.JavaBean2" scope="prototype"/>
+```
+
+   4. 作用域测试
+```java
+/**
+ * 测试ioc配置和销毁方法的触发
+ */
+@Test
+public void test_04() {
+    // 1. 创建ioc容器，就会进行组件对象的实例化 -> init
+    ClassPathXmlApplicationContext classPathXmlApplicationContext = new ClassPathXmlApplicationContext("spring-04.xml");
+
+    // 单例与多例的测试
+    JavaBean2 bean = classPathXmlApplicationContext.getBean(JavaBean2.class);
+    JavaBean2 bean1 = classPathXmlApplicationContext.getBean(JavaBean2.class);
+    System.out.println(bean == bean1);
+
+    // 2. 正常结束ioc容器
+    classPathXmlApplicationContext.close();
+}
+```
+	![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693036256231-b590a9eb-9150-4f5a-ab31-6b9155dbb38e.png#averageHue=%23292b2f&clientId=ub4bdb45a-4da7-4&from=paste&height=263&id=u7b9d2595&originHeight=329&originWidth=964&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=36631&status=done&style=none&taskId=u3eabc536-1c72-4a56-b33b-45740f8463b&title=&width=771.2)

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--
+        init-method：指定类中的初始化方法
+        destroy-method：指定类中的销毁方法
+        spring ioc容器就会在对应的时间节点回调对应的方法
+    -->
+    <bean id="javaBean" class="com.hut.ioc_04.JavaBean" init-method="init" destroy-method="clear"/>
+
+    <!--声明一个组件信息，默认是单例模式-->
+<!--    <bean id="javaBean2" class="com.hut.ioc_04.JavaBean2" scope="singleton"/>-->
+    <!--多例模式：getBean一次，就会创建一个组件对象-->
+    <bean id="javaBean2" class="com.hut.ioc_04.JavaBean2" scope="prototype"/>
+</beans>
