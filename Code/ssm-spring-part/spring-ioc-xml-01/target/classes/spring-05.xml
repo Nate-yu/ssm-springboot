@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--
+        id: getObject()方法返回的对象的标识
+        class: factoryBean标准化工厂类
+    -->
+    <bean id="javaBean" class="com.hut.ioc_05.JavaBeanFactoryBean">
+        <!--此位置的属性是给JavaBean工厂类配置的，而不是getObject方法-->
+        <property name="value" value="余彬"/>
+    </bean>
+</beans>

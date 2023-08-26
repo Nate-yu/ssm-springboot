@@ -646,3 +646,104 @@ public void test_04() {
 }
 ```
 	![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693036256231-b590a9eb-9150-4f5a-ab31-6b9155dbb38e.png#averageHue=%23292b2f&clientId=ub4bdb45a-4da7-4&from=paste&height=263&id=u7b9d2595&originHeight=329&originWidth=964&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=36631&status=done&style=none&taskId=u3eabc536-1c72-4a56-b33b-45740f8463b&title=&width=771.2)
+
+### 4.2.5 实验五：FactoryBean特性和使用
+
+1. FactoryBean简介
+
+ 用于配置复杂的Bean对象，可以将创建过程存储在`FactoryBean`的`getObject()`方法中<br />`FactoryBean<T>` 接口提供三种方法：
+
+   -  `T getObject()`:<br />返回此工厂创建的对象的实例。该返回值会被存储到IoC容器
+   -  `boolean isSingleton()`:<br />如果此 `FactoryBean` 返回单例，则返回 `true` ，否则返回 `false` 。此方法的默认实现返回 `true` （注意，lombok插件使用，可能影响效果）
+   -  `Class<?> getObjectType()`: 
+
+返回 `getObject()` 方法返回的对象类型，如果事先不知道类型，则返回 `null` <br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693039138065-4ce822b8-5871-40ed-b069-a466f41425f7.png#averageHue=%23efefef&clientId=ub4bdb45a-4da7-4&from=paste&id=ua35bcbea&originHeight=319&originWidth=501&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u1c28a23f-0ae1-4aae-aeca-988ad386d84&title=)
+
+2. FactoryBean使用场景
+   1. 代理类的创建
+   2. 第三方框架整合
+   3. 复杂对象实例化
+
+3. FactoryBean应用
+   1. 创建实体类
+```java
+package com.hut.ioc_05;
+
+import lombok.Data;
+
+@Data
+public class JavaBean {
+    private String name;
+}
+```
+
+   2. 准备FactoryBean实现类
+```java
+package com.hut.ioc_05;
+
+import org.springframework.beans.factory.FactoryBean;
+
+/**
+ * 制造JavaBean的工厂bean对象
+ * 步骤：
+ *  1. 实现FactoryBean接口 <返回值泛型>
+ */
+public class JavaBeanFactoryBean implements FactoryBean<JavaBean> {
+
+    private String value;
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    @Override
+    public JavaBean getObject() throws Exception {
+        // 使用自己的方式实例化对象
+        JavaBean javaBean = new JavaBean();
+        javaBean.setName(value);
+        return javaBean;
+    }
+
+    @Override
+    public Class<?> getObjectType() {
+        return JavaBean.class;
+    }
+}
+```
+
+   3. 配置FactoryBean实现类
+```xml
+<!--
+    id: getObject()方法返回的对象的标识
+    class: factoryBean标准化工厂类
+-->
+<bean id="javaBean" class="com.hut.ioc_05.JavaBeanFactoryBean">
+    <!--此位置的属性是给JavaBean工厂类配置的，而不是getObject方法-->
+    <property name="value" value="余彬"/>
+</bean>
+```
+
+   4.  测试读取FactoryBean和FactoryBean.getObject对象  
+```java
+/**
+ * 读取使用factoryBean工厂配置的组件对象
+ */
+@Test
+public void test_05() {
+    // 1. 创建ioc容器，就会进行组件对象的实例化 -> init
+    ClassPathXmlApplicationContext classPathXmlApplicationContext = new ClassPathXmlApplicationContext("spring-05.xml");
+
+    // 2. 读取组件
+    JavaBean javaBean = classPathXmlApplicationContext.getBean("javaBean", JavaBean.class);
+    System.out.println("javaBean = " + javaBean);
+    //FactoryBean工厂也会加入到ioc容器：&id，但不会被实例化
+    Object javaBean1 = classPathXmlApplicationContext.getBean("&javaBean");
+    System.out.println("javaBean1 = " + javaBean1);
+
+    // 3. 正常结束ioc容器
+    classPathXmlApplicationContext.close();
+}
+```
+	![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693039559174-3f08cda5-d3c1-4531-aa3f-7a05b1431967.png#averageHue=%23282a2d&clientId=ub4bdb45a-4da7-4&from=paste&height=225&id=u0b09693a&originHeight=281&originWidth=1195&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=36327&status=done&style=none&taskId=u15c2a181-173c-4a22-87d8-bbac7316f58&title=&width=956)
+
+4.  FactoryBean和BeanFactory区别<br />**	FactoryBean **是 Spring 中一种特殊的 bean，可以在 getObject() 工厂方法自定义的逻辑创建Bean。是一种能够生产其他 Bean 的 Bean。FactoryBean 在容器启动时被创建，而在实际使用时则是通过调用 getObject() 方法来得到其所生产的 Bean。因此，FactoryBean 可以自定义任何所需的初始化逻辑，生产出一些定制化的 bean。一般情况下，整合第三方框架，都是通过定义FactoryBean实现<br />**	BeanFactory** 是 Spring 框架的基础，其作为一个顶级接口定义了容器的基本行为，例如管理 bean 的生命周期、配置文件的加载和解析、bean 的装配和依赖注入等。BeanFactory 接口提供了访问 bean 的方式，例如 getBean() 方法获取指定的 bean 实例。它可以从不同的来源（例如 Mysql 数据库、XML 文件、Java 配置类等）获取 bean 定义，并将其转换为 bean 实例。同时，BeanFactory 还包含很多子类（例如，ApplicationContext 接口）提供了额外的强大功能。<br />	总的来说，FactoryBean 和 BeanFactory 的区别主要在于前者是用于创建 bean 的接口，它提供了更加灵活的初始化定制功能，而后者是用于管理 bean 的框架基础接口，提供了基本的容器功能和 bean 生命周期管理。 
