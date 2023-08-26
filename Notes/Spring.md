@@ -496,3 +496,55 @@ public class SimpleMovieLister {
    - property 标签： name属性代表**set方法标识**、ref代表引用bean的标识id、value属性代表基本属性值
 
 **总结：**<br />  依赖注入（DI）包含引用类型和基本数据类型，同时注入的方式也有多种。主流的注入方式为**setter方法**注入和**构造函数**注入<br />  需要特别**注意**：引用其他bean，使用ref属性。直接注入基本类型值，使用value属性。
+
+### 4.2.3 实验三：IoC容器的创建与使用
+> 想要配置文件中声明组件类信息真正的进行实例化成Bean对象和形成Bean之间的引用关系，我们需要声明IoC容器对象，读取配置文件，实例化组件和关系维护的过程都是在IoC容器中实现的
+
+1. 容器实例化
+```java
+/**
+ * 创建IoC容器并读取配置文件
+ */
+public void createIoC() {
+    // 创建容器，选择合适的容器
+    // 方式1：直接创建容器并且指定配置文件
+    // 构造函数(String...配置文件) 可以填写一个或者多个
+    ApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-03.xml");
+
+    // 方式2：先创建ioc容器对象，再指定配置文件，最后刷新（源码的配置过程）
+    ClassPathXmlApplicationContext classPathXmlApplicationContext = new ClassPathXmlApplicationContext();
+    classPathXmlApplicationContext.setConfigLocation("spring-03.xml"); // 外部配置文件的设置
+    classPathXmlApplicationContext.refresh(); // 调用ioc和di的流程
+}
+```
+
+2. Bean对象读取
+```java
+/**
+ * 在IoC容器中获取组件Bean
+ */
+@Test
+public void getBeanFromIoC() {
+    // 1. 创建ioc容器对象
+    ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
+    applicationContext.setConfigLocation("spring-03.xml");
+    applicationContext.refresh();
+
+    // 2. 读取ioc容器的组件
+    // 方案1：直接根据beanId获取（返回类型是Object，需要强转，故不推荐）
+    HappyComponent happyComponent = (HappyComponent) applicationContext.getBean("happyComponent");
+
+    // 方案2：根据beanId，同时指定bean的类型 Class
+    HappyComponent happyComponent1 = applicationContext.getBean("happyComponent", HappyComponent.class);
+
+    // 方案3：直接根据类型获取
+    // 根据bean的类型和获取，同一个类型，在ioc容器中只能有一个bean
+    // ioc的配置一定是实现类，但也可以根据接口类型获取值
+    HappyComponent happyComponent2 = applicationContext.getBean(HappyComponent.class);
+
+    happyComponent2.doWork();
+
+    System.out.println(happyComponent == happyComponent1);
+    System.out.println(happyComponent2 == happyComponent1);
+}
+```
