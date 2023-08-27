@@ -1225,3 +1225,50 @@ public class SoldierService {
    1. 注解方式IoC只是标记哪些类要被Spring管理
    2. 最终，我们还需要XML方式或者Java配置类方式指定注解生效的包
    3. 现阶段配置方式为 注解 （标记）+ XML（扫描）
+
+### 4.3.2 实验二：组件作用域和周期方法（注解）
+
+1. 周期方法声明与组件作用域配置
+```java
+//@Scope(scopeName = ConfigurableBeanFactory.SCOPE_SINGLETON) // 单例
+@Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE) // 多例
+@Component
+public class JavaBean {
+
+    @PostConstruct
+    public void init() {
+        System.out.println("JavaBean init...");
+    }
+
+    @PreDestroy
+    public void destroy() {
+        System.out.println("JavaBean destroy...");
+    }
+}
+```
+
+2. 编写扫描包的配置文件
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.hut.ioc_02"/>
+</beans>
+```
+
+3. 测试周期方法与作用域
+```java
+@Test
+public void testIoC_02() {
+    ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-02.xml");
+    JavaBean bean = applicationContext.getBean(JavaBean.class);
+    JavaBean bean1 = applicationContext.getBean(JavaBean.class);
+    System.out.println(bean == bean1);
+    applicationContext.close();
+}
+```
+多例：执行两次init方法，不执行destroy方法，且实例化两个对象<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693122882934-e0edb108-28e1-4e8d-b9a9-0609b18da998.png#averageHue=%23292b2f&clientId=u5792e403-addf-4&from=paste&height=261&id=u23554286&originHeight=326&originWidth=965&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=36199&status=done&style=none&taskId=u82e060ca-8609-4762-94ee-5e9f9d4462d&title=&width=772)<br />单例：执行一次init方法和一次destroy方法，且只实例化一个对象
+

@@ -10,4 +10,19 @@
         指定包相当于指定了子包内的所有类
     -->
     <context:component-scan base-package="com.hut.ioc_01"/>
+
+    <!--2. 指定包，但排除注解-->
+<!--    <context:component-scan base-package="com.hut.ioc_01">-->
+<!--        &lt;!&ndash; context:exclude-filter标签：指定排除规则 &ndash;&gt;-->
+<!--        &lt;!&ndash; type属性：指定根据什么来进行排除，annotation取值表示根据注解来排除 &ndash;&gt;-->
+<!--        &lt;!&ndash; expression属性：指定排除规则的表达式，对于注解来说指定全类名即可 &ndash;&gt;-->
+<!--        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>-->
+<!--    </context:component-scan>-->
+
+    <!--3. 指定包，指定包含注解-->
+    <!--base-package表示包下所有注解都生效，use-default-filters表示指定包的所有注解先不生效-->
+<!--    <context:component-scan base-package="com.hut" use-default-filters="false">-->
+<!--        &lt;!&ndash;只扫描包下的注解&ndash;&gt;-->
+<!--        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>-->
+<!--    </context:component-scan>-->
 </beans>

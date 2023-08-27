@@ -1,6 +1,7 @@
 package com.hut.test;
 
 import com.hut.ioc_01.XxxDao;
+import com.hut.ioc_02.JavaBean;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -22,6 +23,15 @@ public class SpringIoCTest {
         System.out.println("service = " + service);
 
         // 3. 关闭容器
+        applicationContext.close();
+    }
+
+    @Test
+    public void testIoC_02() {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-02.xml");
+        JavaBean bean = applicationContext.getBean(JavaBean.class);
+        JavaBean bean1 = applicationContext.getBean(JavaBean.class);
+        System.out.println(bean == bean1);
         applicationContext.close();
     }
 }
