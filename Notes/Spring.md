@@ -1088,3 +1088,140 @@ public void testQueryAll() {
    1. 注入的属性必须添加setter方法、代码结构乱
    2. 配置文件和Java代码分离、编写不是很方便
    3. XML配置文件解析效率低
+
+## 4.3 基于注解方式管理Bean
+### 4.3.1 实验一：Bean注解标记和扫描（IoC）
+
+1. 注解： 和 XML 配置文件一样，注解本身并不能执行，注解本身仅仅只是做一个标记，具体的功能是框架检测到注解标记的位置，然后针对这个位置按照注解标记的功能来执行具体操作。 XML 和注解只是告诉框架中的 Java 代码如何执行
+2. 扫描：Spring 为了知道程序员在哪些地方标记了什么注解，就需要通过扫描的方式，来进行检测。然后根据注解进行后续操作。
+3. 准备Spring项目和组件
+   1. 准备项目（spring-ioc-annotation）
+   2. 准备组件类
+
+普通组件
+```java
+package com.hut.ioc_01;
+
+import org.springframework.stereotype.Component;
+
+/**
+ *
+ * description: 普通的组件
+ * 1. 标记注解
+ * 2. 配置指定包
+ */
+@Component
+public class CommonComponent {
+}
+```
+Controller组件
+```java
+package com.hut.ioc_01;
+
+import org.springframework.stereotype.Controller;
+
+/**
+ *
+ * description: controller类型组件
+ */
+//@Controller // 默认id：xxxController
+@Controller("xxx")
+public class XxxController {
+}
+```
+Service组件
+```java
+package com.hut.ioc_01;
+
+import org.springframework.stereotype.Service;
+
+/**
+ *
+ * description: service类型组件
+ */
+@Service
+public class XxxService {
+}
+```
+		Dao组件
+```java
+package com.hut.ioc_01;
+
+import org.springframework.stereotype.Repository;
+
+/**
+ *
+ * description: dao类型组件
+ */
+@Repository
+public class XxxDao {
+}
+```
+
+4. 组件添加标记注解
+   1. 组件标记注解的区别
+
+Spring 提供了以下多个注解，这些注解可以直接标注在 Java 类上，将它们定义成 Spring Bean。
+
+| 注解 | 说明 |
+| --- | --- |
+| [@Component ](/Component ) | 该注解用于描述 Spring 中的 Bean，它是一个泛化的概念，仅仅表示容器中的一个组件（Bean），并且可以作用在应用的任何层次，例如 Service 层、Dao 层等。 使用时只需将该注解标注在相应类上即可。 |
+| [@Repository ](/Repository ) | 该注解用于将数据访问层（Dao 层）的类标识为 Spring 中的 Bean，其功能与 [@Component ](/Component )相同。  |
+| [@Service ](/Service ) | 该注解通常作用在业务层（Service 层），用于将业务层的类标识为 Spring 中的 Bean，其功能与 [@Component ](/Component )相同。  |
+| [@Controller ](/Controller ) | 该注解通常作用在控制层（如SpringMVC 的 Controller），用于将控制层的类标识为 Spring 中的 Bean，其功能与 [@Component ](/Component )相同。  |
+
+@Controller、@Service、@Repository这三个注解只是在@Component注解的基础上起了三个新的名字
+
+   2. 使用注解标记（代码如上）
+
+5. 配置文件确定扫描范围
+   1. 基本扫描配置
+```xml
+<!--1. 普通配置包扫描
+        base-package: 指定ioc容器去哪些包下查找注解类
+        可以是一个包或多个包
+        指定包相当于指定了子包内的所有类
+-->
+<context:component-scan base-package="com.hut.ioc_01"/>
+```
+
+   2. 指定排除组件
+```xml
+<!--2. 指定包，但排除注解-->
+<context:component-scan base-package="com.hut.ioc_01">
+    <!-- context:exclude-filter标签：指定排除规则 -->
+    <!-- type属性：指定根据什么来进行排除，annotation取值表示根据注解来排除 -->
+    <!-- expression属性：指定排除规则的表达式，对于注解来说指定全类名即可 -->
+    <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
+```
+
+   3. 指定扫描组件
+```xml
+<!--3. 指定包，指定包含注解-->
+<!--base-package表示包下所有注解都生效，use-default-filters表示指定包的所有注解先不生效-->
+<context:component-scan base-package="com.hut" use-default-filters="false">
+    <!--只扫描包下的注解-->
+    <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
+```
+
+6. BeanName问题
+
+在我们使用 XML 方式管理 bean 的时候，每个 bean 都有一个唯一标识——id 属性的值，便于在其他地方引用。现在使用注解后，每个组件仍然应该有一个唯一标识。<br />默认情况：<br />类名首字母小写就是 bean 的 id。例如：SoldierController 类对应的 bean 的 id 就是 soldierController。<br />使用value属性指定：
+```java
+@Controller(value = "tianDog")
+public class SoldierController {
+}
+```
+ 当注解中只设置一个属性时，value属性的属性名可以省略：  
+```java
+@Service("smallDog")
+public class SoldierService {
+}
+```
+
+7. 总结
+   1. 注解方式IoC只是标记哪些类要被Spring管理
+   2. 最终，我们还需要XML方式或者Java配置类方式指定注解生效的包
+   3. 现阶段配置方式为 注解 （标记）+ XML（扫描）

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!--1. 普通配置包扫描
+        base-package: 指定ioc容器去哪些包下查找注解类
+        可以是一个包或多个包
+        指定包相当于指定了子包内的所有类
+    -->
+    <context:component-scan base-package="com.hut.ioc_01"/>
+</beans>
