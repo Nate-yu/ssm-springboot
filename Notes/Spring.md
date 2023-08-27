@@ -746,4 +746,345 @@ public void test_05() {
 ```
 	![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693039559174-3f08cda5-d3c1-4531-aa3f-7a05b1431967.png#averageHue=%23282a2d&clientId=ub4bdb45a-4da7-4&from=paste&height=225&id=u0b09693a&originHeight=281&originWidth=1195&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=36327&status=done&style=none&taskId=u15c2a181-173c-4a22-87d8-bbac7316f58&title=&width=956)
 
-4.  FactoryBean和BeanFactory区别<br />**	FactoryBean **是 Spring 中一种特殊的 bean，可以在 getObject() 工厂方法自定义的逻辑创建Bean。是一种能够生产其他 Bean 的 Bean。FactoryBean 在容器启动时被创建，而在实际使用时则是通过调用 getObject() 方法来得到其所生产的 Bean。因此，FactoryBean 可以自定义任何所需的初始化逻辑，生产出一些定制化的 bean。一般情况下，整合第三方框架，都是通过定义FactoryBean实现<br />**	BeanFactory** 是 Spring 框架的基础，其作为一个顶级接口定义了容器的基本行为，例如管理 bean 的生命周期、配置文件的加载和解析、bean 的装配和依赖注入等。BeanFactory 接口提供了访问 bean 的方式，例如 getBean() 方法获取指定的 bean 实例。它可以从不同的来源（例如 Mysql 数据库、XML 文件、Java 配置类等）获取 bean 定义，并将其转换为 bean 实例。同时，BeanFactory 还包含很多子类（例如，ApplicationContext 接口）提供了额外的强大功能。<br />	总的来说，FactoryBean 和 BeanFactory 的区别主要在于前者是用于创建 bean 的接口，它提供了更加灵活的初始化定制功能，而后者是用于管理 bean 的框架基础接口，提供了基本的容器功能和 bean 生命周期管理。 
+4.  FactoryBean和BeanFactory区别<br />**	FactoryBean **是 Spring 中一种特殊的 bean，可以在 getObject() 工厂方法自定义的逻辑创建Bean。是一种能够生产其他 Bean 的 Bean。FactoryBean 在容器启动时被创建，而在实际使用时则是通过调用 getObject() 方法来得到其所生产的 Bean。因此，FactoryBean 可以自定义任何所需的初始化逻辑，生产出一些定制化的 bean。一般情况下，整合第三方框架，都是通过定义FactoryBean实现<br />**	BeanFactory** 是 Spring 框架的基础，其作为一个顶级接口定义了容器的基本行为，例如管理 bean 的生命周期、配置文件的加载和解析、bean 的装配和依赖注入等。BeanFactory 接口提供了访问 bean 的方式，例如 getBean() 方法获取指定的 bean 实例。它可以从不同的来源（例如 Mysql 数据库、XML 文件、Java 配置类等）获取 bean 定义，并将其转换为 bean 实例。同时，BeanFactory 还包含很多子类（例如，ApplicationContext 接口）提供了额外的强大功能。<br />	总的来说，FactoryBean 和 BeanFactory 的区别主要在于前者是用于**创建 bean 的接口**，它提供了更加灵活的初始化定制功能，而后者是用于**管理 bean 的框架基础接口**，提供了基本的容器功能和 bean 生命周期管理。 
+
+### 4.2.6 实验六：基于XML方式整合三层架构组件
+
+1. 需求分析
+
+搭建一个三层架构案例，模拟查询全部学生（学生表）信息，持久层使用JdbcTemplate和Druid技术，使用XML方式进行组件管理<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693099334895-2bbc7203-bbee-45b2-a129-f3b582235cf5.png#averageHue=%23f9f8f3&clientId=u668ebf16-e262-4&from=paste&height=480&id=u74fda4d6&originHeight=959&originWidth=1563&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=184538&status=done&style=none&taskId=u024e5357-0848-4029-a5d2-d891e93d0b8&title=&width=782)
+
+2. 数据库准备
+```java
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE database studb;
+
+use studb;
+
+-- ----------------------------
+-- Table structure for students
+-- ----------------------------
+DROP TABLE IF EXISTS `students`;
+CREATE TABLE `students`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `gender` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `age` int(11) NULL DEFAULT NULL,
+  `class` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of students
+-- ----------------------------
+INSERT INTO `students` VALUES (1, '张三', '男', 20, '高中一班');
+INSERT INTO `students` VALUES (2, '李四', '男', 19, '高中二班');
+INSERT INTO `students` VALUES (3, '王五', '女', 18, '高中一班');
+INSERT INTO `students` VALUES (4, '赵六', '女', 20, '高中三班');
+INSERT INTO `students` VALUES (5, '刘七', '男', 19, '高中二班');
+INSERT INTO `students` VALUES (6, '陈八', '女', 18, '高中一班');
+INSERT INTO `students` VALUES (7, '杨九', '男', 20, '高中三班');
+INSERT INTO `students` VALUES (8, '吴十', '男', 19, '高中二班');
+
+SET FOREIGN_KEY_CHECKS = 1;
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693099624798-b0d85155-3ce7-4ac8-86e1-17ef1fbef0d3.png#averageHue=%23222428&clientId=u668ebf16-e262-4&from=paste&height=331&id=u5b909d8e&originHeight=414&originWidth=814&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=43447&status=done&style=none&taskId=ud1f6f4c6-9385-4c68-80c9-cac25570ac3&title=&width=651.2)
+
+3. 项目准备
+   1. spring-ioc-xml-practice-02
+   2. 在父工程中导入依赖
+```xml
+<!-- 数据库驱动和连接池-->
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.25</version>
+</dependency>
+
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid</artifactId>
+    <version>1.2.8</version>
+</dependency>
+
+<!-- spring-jdbc -->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-jdbc</artifactId>
+    <version>6.0.6</version>
+</dependency>
+```
+
+   3. 实体类准备
+```java
+package com.hut.pojo;
+
+import lombok.Data;
+
+@Data
+public class Student {
+
+    private Integer id;
+    private String name;
+    private String gender;
+    private Integer age;
+    private String classes;
+
+}
+```
+
+4. JdbcTemplate技术
+   1. jdbc.properties进行提取数据库连接信息
+```properties
+jdbc.url=jdbc:mysql://localhost:3306/studb?useUnicode=true&characterEncoding=UTF-8
+jdbc.driver=com.mysql.cj.jdbc.Driver
+jdbc.username=root
+jdbc.password=root
+```
+	注意：
+
+      1. 每个key需要有前缀扩展名，比如上面就是`jdbc.xxx`，否则会出现报错：Access denied for user 'xxx'@'localhost' (using password: YES)
+      2. url在指定数据库后必须加上`?useUnicode=true&characterEncoding=UTF-8`来指定编码，否则在插入中文数据的时候会出现乱码
+   2. springioc配置文件（spring-01.xml）
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!--读取外部配置文件 .properties: value = "${key}"
+        如：<context:property-placeholder location="classpath:jdbc.properties, classpath:其他配置文件"/>
+    -->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="url" value="${jdbc.url}"/>
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+</beans>
+```
+
+   3.  基于jdbcTemplate的CRUD使用
+```java
+/**
+ * 通过ioc容器读取配置的JdbcTemplate组件
+ */
+@Test
+public void testForIoC() {
+    // 1. 创建ioc容器
+    ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-01.xml");
+
+    // 2. 获取jdbcTemplate组件
+    JdbcTemplate jdbcTemplate = applicationContext.getBean(JdbcTemplate.class);
+
+    // 3. 进行数据库的crud动作
+    // 3.1 插入 删除 修改
+    String sql = "insert into students(name,gender,age,class) values(?,?,?,?)";
+    /**
+     * 参数1：String sql语句，可以带占位符
+     * 参数2：Object[] 参数数组，用于给占位符赋值
+     * 返回值：int 影响行数
+     */
+    int rows = jdbcTemplate.update(sql, "yubin", "男", 22, "1802");
+    System.out.println("rows = " + rows);
+
+    // 3.2 查询单条数据
+    // 根据id查询学生数据，返回一个对应的实体对象
+    sql = "select * from students where id = ?";
+    /**
+     * 参数1：sql语句
+     * 参数2：RowMapper，列名和属性名的映射器接口
+     * 参数3：Object 可以变参数，占位符的值
+     * 返回值：T RowMapper指定的对象
+     */
+    Student student1 = jdbcTemplate.queryForObject(sql,
+            /**
+             * 从rs结果集中获取列的值，赋值给实体类对象
+             * @param rs 结果集
+             * @param rowNum 行数
+             */
+            (rs, rowNum) -> {
+                Student student = new Student();
+                student.setId(rs.getInt("id"));
+                student.setName(rs.getString("name"));
+                student.setGender(rs.getString("gender"));
+                student.setAge(rs.getInt("age"));
+                student.setClasses(rs.getString("class"));
+                return student;
+            }, 1);
+    System.out.println("student1 = " + student1);
+
+    // 3.3 查询多条数据
+    // 查询所有学生数据，返回一个List集合
+    sql = "select id, name, gender, age, class as classes from students";
+    //TODO: BeanPropertyRowMapper可以帮助我们自动映射列和属性值，要求列名和属性名一致，不一致的情况就要起别名
+    List<Student> studentList = jdbcTemplate.query(sql,new BeanPropertyRowMapper<Student>(Student.class));
+    System.out.println("studentList = " + studentList);
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693100522224-507db45b-f50a-41b6-945e-d61936a46c58.png#averageHue=%23242629&clientId=u668ebf16-e262-4&from=paste&height=222&id=u71e0033f&originHeight=278&originWidth=2368&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=55173&status=done&style=none&taskId=ucbbb8775-d0f4-49cc-ab7d-610031a5864&title=&width=1894.4)<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693100555871-0da41b1c-a24a-445c-b12d-43fc8e65f2ee.png#averageHue=%23212327&clientId=u668ebf16-e262-4&from=paste&height=335&id=u8cc42b79&originHeight=419&originWidth=814&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=42095&status=done&style=none&taskId=ude3bb923-8eb0-4e5c-8fe0-41e978f2e8d&title=&width=651.2)
+
+5. 三层架构搭建和实现
+   1. 持久层
+```java
+/**
+ * 数据层接口
+ */
+public interface StudentDao {
+
+    /**
+     *  查询所有学生
+     * @return
+     */
+    List<Student> queryAll();
+}
+
+/**
+ * 数据层实现类
+ */
+public class StudentDaoImpl implements StudentDao {
+
+    private JdbcTemplate jdbcTemplate;
+
+    /**
+     * 注入jdbcTemplate对象
+     * @param jdbcTemplate
+     */
+    public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @Override
+    public List<Student> queryAll() {
+        String sql = "select id, name, gender, age, class as classes from students";
+        List<Student> students = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Student.class));
+        System.out.println("studentDao: " + students);
+        return students;
+    }
+}
+```
+
+   2. 业务层
+```java
+/**
+ * 学生业务接口
+ */
+public interface StudentService {
+
+    /**
+     * 查询所有学生
+     * @return
+     */
+    List<Student> findAll();
+}
+
+/**
+ * 业务层实现类
+ */
+public class StudentServiceImpl implements StudentService {
+
+    private StudentDao studentDao;
+
+    public void setStudentDao(StudentDao studentDao) {
+        this.studentDao = studentDao;
+    }
+
+    @Override
+    public List<Student> findAll() {
+        List<Student> studentList = studentDao.queryAll();
+        System.out.println("studentService: " + studentList);
+        return studentList;
+    }
+}
+```
+
+   3. 表述层
+```java
+public class StudentController {
+
+    private StudentService studentService;
+
+    public void setStudentService(StudentService studentService) {
+        this.studentService = studentService;
+    }
+
+    public void findAll() {
+        List<Student> all = studentService.findAll();
+        System.out.println("最终所有学员数据为：" + all);
+    }
+}
+```
+
+6. 三层架构IoC配置（spring-02.xml）
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:property-placeholder location="jdbc.properties"/>
+    <!--Druid-->
+    <bean id="druidDataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+
+    <!--jdbcTemplate-->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="druidDataSource"/>
+    </bean>
+
+    <!--dao配置注入jdbcTemplate-->
+    <bean id="studentDao" class="com.hut.dao.impl.StudentDaoImpl">
+        <property name="jdbcTemplate" ref="jdbcTemplate"/>
+    </bean>
+
+    <!--service配置注入dao-->
+    <bean id="studentService" class="com.hut.service.impl.StudentServiceImpl">
+        <property name="studentDao" ref="studentDao"/>
+    </bean>
+
+    <!--controller配置注入service-->
+    <bean id="studentController" class="com.hut.controller.StudentController">
+        <property name="studentService" ref="studentService"/>
+    </bean>
+</beans>
+```
+
+7. 测试
+```java
+/**
+ * 从ioc容器中获取controller并调用业务
+ */
+@Test
+public void testQueryAll() {
+    // 1. 创建ioc容器
+    ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-02.xml");
+    
+    // 2. 获取组件对象
+    StudentController controller = applicationContext.getBean(StudentController.class);
+
+    // 3. 使用组件对象
+    controller.findAll();
+
+    // 4. 关闭容器
+    applicationContext.close();
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693100623423-5bc2351b-0477-42ad-b3de-629647fd7161.png#averageHue=%2326282c&clientId=u668ebf16-e262-4&from=paste&height=229&id=u003cdab1&originHeight=286&originWidth=2284&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=79476&status=done&style=none&taskId=u53a72901-86ad-48b5-bd58-153799ce9f7&title=&width=1827.2)
+
+8. XMLIoC方式缺点
+   1. 注入的属性必须添加setter方法、代码结构乱
+   2. 配置文件和Java代码分离、编写不是很方便
+   3. XML配置文件解析效率低
