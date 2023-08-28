@@ -43,4 +43,12 @@ public class SpringIoCTest {
         controller.show();
         applicationContext.close();
     }
+
+    @Test
+    public void testIoC_04() {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-04.xml");
+        com.hut.ioc_04.JavaBean bean = applicationContext.getBean(com.hut.ioc_04.JavaBean.class);
+        System.out.println("bean = " + bean);
+        applicationContext.close();
+    }
 }

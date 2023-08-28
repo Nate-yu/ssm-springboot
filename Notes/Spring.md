@@ -1436,3 +1436,52 @@ public class XxxController {
     }
 }
 ```
+
+### 4.3.4 实验四：基本类型属性赋值（Bean属性赋值）
+> `@Value` 通常用于注入外部化属性
+
+**声明外部配置**<br />jdbc.properties
+```java
+jdbc.username = root
+jdbc.password = root
+```
+
+**xml引入外部配置**
+```java
+<context:component-scan base-package="com.hut.ioc_04"/>
+<context:property-placeholder location="classpath:jdbc.properties"/>
+```
+
+**@Value注解读取配置**
+```java
+@Component
+@Data
+public class JavaBean {
+    @Value("张三") // 注解赋值，主要用于读取外部配置
+    private String name;
+
+    // 情况1: ${key} 取外部配置key对应的值
+    @Value("${jdbc.username}")
+    private String username;
+
+    @Value("${jdbc.password}")
+    private String password;
+    
+	// 情况2: ${key:defaultValue} 没有key,可以给与默认值
+    @Value("${jdbc.age:19}")
+    private int age;
+}
+```
+
+
+**测试**
+```java
+@Test
+public void testIoC_04() {
+    ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-04.xml");
+    com.hut.ioc_04.JavaBean bean = applicationContext.getBean(com.hut.ioc_04.JavaBean.class);
+    System.out.println("bean = " + bean);
+    applicationContext.close();
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693209784415-2810085d-8882-4ed6-977a-07610a057cfd.png#averageHue=%2327282c&clientId=uf54b58bd-0032-4&from=paste&height=232&id=u90714a4e&originHeight=290&originWidth=1309&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=31462&status=done&style=none&taskId=u691a4f45-cdf9-4c53-a1d8-e68266a9b8f&title=&width=1047.2)
