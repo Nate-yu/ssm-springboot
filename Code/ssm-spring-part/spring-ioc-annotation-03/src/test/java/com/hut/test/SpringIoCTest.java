@@ -2,6 +2,7 @@ package com.hut.test;
 
 import com.hut.ioc_01.XxxDao;
 import com.hut.ioc_02.JavaBean;
+import com.hut.ioc_03.UserController;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -32,6 +33,14 @@ public class SpringIoCTest {
         JavaBean bean = applicationContext.getBean(JavaBean.class);
         JavaBean bean1 = applicationContext.getBean(JavaBean.class);
         System.out.println(bean == bean1);
+        applicationContext.close();
+    }
+
+    @Test
+    public void testIoC_03() {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-03.xml");
+        UserController controller = applicationContext.getBean(UserController.class);
+        controller.show();
         applicationContext.close();
     }
 }

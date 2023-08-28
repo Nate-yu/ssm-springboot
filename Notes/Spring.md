@@ -1270,5 +1270,169 @@ public void testIoC_02() {
     applicationContext.close();
 }
 ```
-多例：执行两次init方法，不执行destroy方法，且实例化两个对象<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693122882934-e0edb108-28e1-4e8d-b9a9-0609b18da998.png#averageHue=%23292b2f&clientId=u5792e403-addf-4&from=paste&height=261&id=u23554286&originHeight=326&originWidth=965&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=36199&status=done&style=none&taskId=u82e060ca-8609-4762-94ee-5e9f9d4462d&title=&width=772)<br />单例：执行一次init方法和一次destroy方法，且只实例化一个对象
+多例：执行两次init方法，不执行destroy方法，且实例化两个对象<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693122882934-e0edb108-28e1-4e8d-b9a9-0609b18da998.png#averageHue=%23292b2f&clientId=u5792e403-addf-4&from=paste&height=261&id=u23554286&originHeight=326&originWidth=965&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=36199&status=done&style=none&taskId=u82e060ca-8609-4762-94ee-5e9f9d4462d&title=&width=772)<br />单例：执行一次init方法和一次destroy方法，且只实例化一个对象<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693122974422-2d14c595-5376-4a49-9271-7e97d2cf2c66.png#averageHue=%232a2c2f&clientId=u5792e403-addf-4&from=paste&height=263&id=ue36f02f7&originHeight=329&originWidth=946&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=37058&status=done&style=none&taskId=ua118d6b5-244a-4fbb-8208-67dc56dc818&title=&width=756.8)
 
+### 4.3.3 实验三：Bean属性赋值（引用类型自动装配）
+
+1. 组件声明
+   1. UserController
+```java
+package com.hut.ioc_03;
+
+import jakarta.annotation.Resource;
+import org.springframework.stereotype.Controller;
+
+@Controller
+public class UserController {
+
+    //@Autowired // 自动注入（DI）：1. 去ioc容器中查找复合类型的组件对象 2. 设置当前属性
+    @Resource(name = "userServiceImpl")
+    private UserService userService;
+
+    /**
+     * 调用业务层方法
+     */
+    public void show() {
+        String show = userService.show();
+        System.out.println(show);
+    }
+}
+
+```
+
+   2. UseService
+```java
+package com.hut.ioc_03;
+
+public interface UserService {
+
+    public String show();
+}
+
+@Service
+public class UserServiceImpl implements UserService{
+    @Override
+    public String show() {
+        return "UserServiceImpl show()";
+    }
+}
+```
+
+2. 自动装配
+   1. 前提： 参与自动装配的组件（需要装配、被装配）全部都必须在IoC容器中。不区分IoC的方式，XML和注解都可以
+   2.  @Autowired注解：在成员变量上直接标记@Autowired注解即可，不需要提供setXxx()方法（如上UserController类）
+
+3. @Autowired注解细节
+   1. 标记位置
+      1. 成员变量（最主要的方式）
+
+ 与xml进行bean ref引用不同，他不需要有set方法
+```java
+@Controller
+public class UserController {
+
+    @Autowired // 自动注入（DI）：1. 去ioc容器中查找复合类型的组件对象 2. 设置当前属性
+    private UserService userService;
+
+    /**
+     * 调用业务层方法
+     */
+    public void show() {
+        String show = userService.show();
+        System.out.println(show);
+    }
+}
+```
+
+      2. 构造器
+```java
+@Controller(value = "tianDog")
+public class SoldierController {
+    
+    private SoldierService soldierService;
+    
+    @Autowired
+    public SoldierController(SoldierService soldierService) {
+        this.soldierService = soldierService;
+    }
+    ……
+```
+
+      3. setXxx()方法
+```java
+@Controller(value = "tianDog")
+public class SoldierController {
+
+    private SoldierService soldierService;
+
+    @Autowired
+    public void setSoldierService(SoldierService soldierService) {
+        this.soldierService = soldierService;
+    }
+    ……
+```
+
+   2. 工作流程
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693208215859-f8df5dcd-3360-4280-9ac2-c601d49e8a31.png#averageHue=%23f4f4f4&clientId=uf54b58bd-0032-4&from=paste&id=u9e04f68d&originHeight=373&originWidth=419&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u69715450-c3fe-4b4f-88cd-2779224d3bb&title=)
+
+   - 首先根据所需要的组件类型到 IOC 容器中查找 
+   - 能够找到唯一的 bean：直接执行装配
+   - 如果完全找不到匹配这个类型的 bean：装配失败
+   - 和所需类型匹配的 bean 不止一个 
+      - 没有 [@Qualifier ](/Qualifier ) 注解：根据 [@Autowired ](/Autowired ) 标记位置成员变量的变量名作为 bean 的 id 进行匹配  
+         - 能够找到：执行装配
+         - 找不到：装配失败
+      - 使用 [@Qualifier ](/Qualifier ) 注解：根据 [@Qualifier ](/Qualifier ) 注解中指定的名称作为 bean 的id进行匹配  
+         - 能够找到：执行装配
+         - 找不到：装配失败
+```java
+@Controller(value = "tianDog")
+public class SoldierController {
+    
+    @Autowired
+    @Qualifier(value = "maomiService222")
+    // 根据面向接口编程思想，使用接口类型引入Service组件
+    private ISoldierService soldierService;
+```
+
+4. @Resource注解
+>  标识一个需要注入的资源，是实现Java EE组件之间依赖关系的一种方式  
+
+   1. 与@Autowired注解的区别
+      - @Resource注解是JDK扩展包中的，也就是说属于JDK的一部分。所以该注解是标准注解，更加具有通用性。(JSR-250标准中制定的注解类型。JSR是Java规范提案。)
+      - @Autowired注解是Spring框架自己的。
+      - **@Resource注解默认根据Bean名称装配，未指定name时，使用属性名作为name。通过name找不到的话会自动启动通过类型装配。**
+      - **@Autowired注解默认根据类型装配，如果想根据名称装配，需要配合@Qualifier注解一起用。**
+      - @Resource注解用在属性上、setter方法上。
+      - @Autowired注解用在属性上、setter方法上、构造方法上、构造方法参数上。
+   2.  @Resource注解属于JDK扩展包，所以不在JDK当中，需要额外引入以下依赖（高于JDK11或低于JDK8）：
+```xml
+<dependency>
+    <groupId>jakarta.annotation</groupId>
+    <artifactId>jakarta.annotation-api</artifactId>
+    <version>2.1.1</version>
+</dependency>
+```
+
+   3. @Resource注解的使用
+```java
+@Controller
+public class XxxController {
+    /**
+     * 1. 如果没有指定name,先根据属性名查找IoC中组件xxxService
+     * 2. 如果没有指定name,并且属性名没有对应的组件,会根据属性类型查找
+     * 3. 可以指定name名称查找!  @Resource(name='test') == @Autowired + @Qualifier(value='test')
+     */
+    @Resource
+    private XxxService xxxService;
+
+    //@Resource(name = "指定beanName")
+    //private XxxService xxxService;
+
+    public void show(){
+        System.out.println("XxxController.show");
+        xxxService.show();
+    }
+}
+```
