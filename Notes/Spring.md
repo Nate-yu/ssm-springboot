@@ -1485,3 +1485,167 @@ public void testIoC_04() {
 }
 ```
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693209784415-2810085d-8882-4ed6-977a-07610a057cfd.png#averageHue=%2327282c&clientId=uf54b58bd-0032-4&from=paste&height=232&id=u90714a4e&originHeight=290&originWidth=1309&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=31462&status=done&style=none&taskId=u691a4f45-cdf9-4c53-a1d8-e68266a9b8f&title=&width=1047.2)
+
+### 4.3.5 实验五：基于注解 + XML方式整合三层架构组件
+
+1. 需求与数据库准备见[https://www.yuque.com/abiny/java/fsge8ad9mdmlx7g6#TlxfP](#TlxfP)
+2. 项目准备
+   1. 项目名：spring-annotation-practice-04
+   2. 父项目导入新依赖：
+```xml
+<!-- @Resource -->
+<dependency>
+    <groupId>jakarta.annotation</groupId>
+    <artifactId>jakarta.annotation-api</artifactId>
+    <version>2.1.1</version>
+</dependency>
+
+<!-- lombok -->
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <version>1.18.22</version>
+    <scope>compile</scope>
+</dependency>
+```
+
+   3. 实体类
+```java
+package com.hut.pojo;
+
+import lombok.Data;
+
+@Data
+public class Student {
+    private Integer id;
+    private String name;
+    private String gender;
+    private Integer age;
+    private String classes;
+}
+```
+
+4. 三层架构搭建与实现
+   1. 注意：使用`@Resource`注解必须导入依赖`import jakarta.annotation.Resource;`
+   2. 持久层
+```java
+// 接口
+public interface StudentDao {
+    /**
+     * 查询全部学生数据
+     * @return
+     */
+    List<Student> getAll();
+}
+
+// 实现类
+@Repository
+public class StudentDaoImpl implements StudentDao {
+
+    @Resource
+    private JdbcTemplate jdbcTemplate;
+
+
+    @Override
+    public List<Student> getAll() {
+        String sql = "select id , name , age , gender , class as classes from students ;";
+        /*
+          query可以返回集合
+          BeanPropertyRowMapper就是封装好RowMapper的实现,要求属性名和列名相同即可
+         */
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Student.class));
+    }
+}
+```
+
+   3. 业务层
+```java
+public interface StudentService {
+
+    /**
+     * 查询全部学生业务
+     * @return
+     */
+    List<Student> getAllStudents();
+}
+
+@Service
+public class StudentServiceImpl implements StudentService {
+    @Resource
+    private StudentDao studentDao;
+
+    @Override
+    public List<Student> getAllStudents() {
+        return studentDao.getAll();
+    }
+}
+```
+
+   4. 表述层
+```java
+@Controller
+public class StudentController {
+
+    @Resource
+    private StudentService studentService;
+
+    // 查询所有学生
+    public void getAllStudent() {
+        List<Student> allStudents = studentService.getAllStudents();
+        System.out.println("allStudents = " + allStudents);
+    }
+}
+```
+
+5. 配置文件准备
+   1. jdbc.properties
+```properties
+jdbc.url=jdbc:mysql://localhost:3306/studb?useUnicode=true&characterEncoding=UTF-8
+jdbc.driver=com.mysql.cj.jdbc.Driver
+jdbc.username=root
+jdbc.password=root
+```
+
+   2. spring-ioc.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+    <!--扫描注解-->
+    <context:component-scan base-package="com.hut"/>
+    <!--导入外部文件-->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <!--配置数据源-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+</beans>
+```
+
+6. 运行测试
+```java
+public class SpringTest {
+    @Test
+    public void test() {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-ioc.xml");
+        StudentController studentController = applicationContext.getBean(StudentController.class);
+        studentController.getAllStudent();
+        applicationContext.close();
+    }
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693234875339-c6448f2c-b3cc-4590-8c66-a6e14fd21d00.png#averageHue=%2326282b&clientId=ucf8e2c86-364d-4&from=paste&height=229&id=u7b32eb04&originHeight=286&originWidth=1620&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=61683&status=done&style=none&taskId=u62fc3dcf-d836-46b3-93e1-a65e9b50bb4&title=&width=1296)
+
+7. 注解+XML IoC方式问题总结 
+   1. 自定义类可以使用注解方式，但是第三方依赖的类依然使用XML方式！
+   2. XML格式解析效率低！

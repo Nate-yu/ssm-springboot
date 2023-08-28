@@ -11,6 +11,7 @@
         <module>spring-ioc-xml-01</module>
         <module>spring-ioc-xml-practice-02</module>
         <module>spring-ioc-annotation-03</module>
+        <module>spring-annotation-practice-04</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -62,6 +63,14 @@
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
             <version>2.1.1</version>
+        </dependency>
+
+        <!-- lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.22</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
