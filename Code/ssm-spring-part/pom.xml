@@ -14,6 +14,7 @@
         <module>spring-annotation-practice-04</module>
         <module>spring-ioc-java-05</module>
         <module>spring-ioc-java-practice-06</module>
+        <module>spring-test-annotation-07</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -30,6 +31,12 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>5.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>6.0.6</version>
+            <scope>test</scope>
         </dependency>
 
         <!--spring context依赖-->

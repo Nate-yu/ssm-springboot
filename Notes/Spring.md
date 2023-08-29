@@ -1995,4 +1995,49 @@ public class JavaTest {
 - 第三方类使用配置类声明方法+@Bean方式处理
 - 完全注解方式（配置类+注解）是现在主流配置方式
 
+## 4.5 三种配置方式总结
+### 4.5.1 XML方式配置总结
+  1. 所有内容写到xml格式配置文件中<br />  2. 声明bean通过<bean标签<br />  3. <bean标签包含基本信息（id,class）和属性信息 <property name value / ref<br />  4. 引入外部的properties文件可以通过<context:property-placeholder<br />  5. IoC具体容器实现选择ClassPathXmlApplicationContext对象
 
+### 4.5.2 XML+注解方式配置总结
+  1. 注解负责标记IoC的类和进行属性装配<br />  2. xml文件依然需要，需要通过<context:component-scan标签指定注解范围<br />  3. 标记IoC注解：@Component，@Service，@Controller，@Repository <br />  4. 标记DI注解：@Autowired @Qualifier @Resource @Value<br />  5. IoC具体容器实现选择ClassPathXmlApplicationContext对象
+
+### 4.5.3 完全注解方式配置总结
+  1. 完全注解方式指的是去掉xml文件，使用配置类 + 注解实现<br />  2. xml文件替换成使用@Configuration注解标记的类<br />  3. 标记IoC注解：@Component,@Service,@Controller,@Repository <br />  4. 标记DI注解：@Autowired @Qualifier @Resource @Value<br />  5. <context:component-scan标签指定注解范围使用@ComponentScan(basePackages = {"com.atguigu.components"})替代<br />  6. <context:property-placeholder引入外部配置文件使用@PropertySource({"classpath:application.properties","classpath:jdbc.properties"})替代<br />  7. <bean 标签使用@Bean注解和方法实现<br />  8. IoC具体容器实现选择AnnotationConfigApplicationContext对象
+
+## 4.6 整合 Spring5-Test5搭建测试环境
+
+1.  整合测试环境作用<br />好处1：不需要自己创建IOC容器对象了<br />好处2：任何需要的bean都可以在测试类中直接享受自动装配 
+2. 父项目导入相关依赖
+```xml
+<!--junit5测试-->
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter-api</artifactId>
+    <version>5.3.1</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-test</artifactId>
+    <version>6.0.6</version>
+    <scope>test</scope>
+</dependency>
+```
+
+3. 整合测试注解使用
+```java
+//@SpringJUnitConfig(locations = {"classpath:spring-context.xml"})  //指定配置文件xml
+@SpringJUnitConfig(classes = {JavaConfig.class}) // 指定配置类
+public class JavaTest {
+    @Autowired
+    private A a;
+    @Autowired
+    private B b;
+    @Test
+    public void test() {
+        System.out.println(a);
+        System.out.println(b);
+    }
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693278912686-dbe5e704-fc13-4045-874c-a34e1a2e4328.png#averageHue=%23282a2e&clientId=u052a4485-9d86-4&from=paste&height=301&id=ua71f5992&originHeight=376&originWidth=964&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=32358&status=done&style=none&taskId=u2befd97f-30f5-41d7-ac66-d184da75737&title=&width=771)
