@@ -1703,3 +1703,32 @@ public void test() {
 - @ComponentScan(basePackages = {"包","包"}) 替代<context:component-scan标签实现注解扫描
 - @PropertySource("classpath:配置文件地址") 替代 <context:property-placeholder标签
 - 配合IoC/DI注解，可以进行完整注解开发
+
+### 4.4.3 实验二：@Bean定义组件
+**场景需求**：将Druid连接池对象存储到IoC容器<br />**需求分析**：第三方jar包的类，添加到ioc容器，无法使用@Component等相关注解。因为源码jar包内容为只读模式<br />**配置类方式实现**： `@Bean`注释用于指示方法实例化、配置和初始化要由Spring IoC容器管理的新对象。对于那些熟悉 Spring 的`<beans/>`XML 配置的人来说，`@Bean` 注释与 `<beans/>`元素起着相同的作用。 
+```java
+/**
+ * java配置类，替代xml配置文件
+ * 1. 包扫描注解配置
+ * 2. 引用外部的配置文件
+ * 3. 声明第三方依赖的bean组件
+ */
+@Configuration
+@ComponentScan("com.hut.ioc_01")
+@PropertySource("classpath:jdbc.properties")
+public class JavaConfiguration {
+
+    @Bean
+    public DruidDataSource dataSource(@Value("${jdbc.driver}") String driver,
+                                      @Value("${jdbc.url}") String url,
+                                      @Value("${jdbc.username}") String username,
+                                      @Value("${jdbc.password}") String password) {
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+}
+```
