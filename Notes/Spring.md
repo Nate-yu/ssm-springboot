@@ -1732,3 +1732,215 @@ public class JavaConfiguration {
     }
 }
 ```
+
+### 4.4.4 实验三：@Bean注解细节
+
+1. @Bean生成BeanName问题  
+
+指定@Bean的名称：
+```java
+@Configuration
+public class AppConfig {
+
+  @Bean("myThing") //指定名称
+  public Thing thing() {
+    return new Thing();
+  }
+}
+```
+
+`@Bean` 注释方法。使用此方法在指定为方法返回值的类型的 `ApplicationContext` 中注册 Bean 定义。缺省情况下，Bean 名称与方法名称相同。下面的示例演示 `@Bean` 方法声明：
+```java
+@Configuration
+public class AppConfig {
+
+  @Bean
+  public TransferServiceImpl transferService() {
+    return new TransferServiceImpl();
+  }
+}
+```
+
+前面的配置完全等同于下面的Spring XML：
+```java
+<beans>
+  <bean id="transferService" class="com.acme.TransferServiceImpl"/>
+</beans>
+```
+
+2.  **@Bean初始化和销毁方法指定 **<br />`@Bean` 注解支持指定任意初始化和销毁回调方法，非常类似于 Spring XML 在 `bean` 元素上的 `init-method` 和 `destroy-method` 属性，如以下示例所示： 
+```java
+public class BeanOne {
+
+  public void init() {
+    // initialization logic
+  }
+}
+
+public class BeanTwo {
+
+  public void cleanup() {
+    // destruction logic
+  }
+}
+
+@Configuration
+public class AppConfig {
+
+  @Bean(initMethod = "init")
+  public BeanOne beanOne() {
+    return new BeanOne();
+  }
+
+  @Bean(destroyMethod = "cleanup")
+  public BeanTwo beanTwo() {
+    return new BeanTwo();
+  }
+}
+```
+
+3.  **@Bean Scope作用域 **<br />可以指定使用 `@Bean` 注释定义的 bean 应具有特定范围。您可以使用在 Bean 作用域部分中指定的任何标准作用域。<br />默认作用域为 `singleton` ，但您可以使用 `@Scope` 注释覆盖此范围，如以下示例所示： 
+```java
+@Configuration
+public class MyConfiguration {
+
+  @Bean
+  @Scope("prototype")
+  public Encryptor encryptor() {
+    // ...
+  }
+}
+```
+
+1.  **@Bean方法之间依赖**<br />准备组件 
+```java
+public class HappyMachine {
+    
+    private String machineName;
+    
+    public String getMachineName() {
+        return machineName;
+    }
+    
+    public void setMachineName(String machineName) {
+        this.machineName = machineName;
+    }
+}
+```
+
+```java
+public class HappyComponent {
+    //引用新组件
+    private HappyMachine happyMachine;
+
+    public HappyMachine getHappyMachine() {
+        return happyMachine;
+    }
+
+    public void setHappyMachine(HappyMachine happyMachine) {
+        this.happyMachine = happyMachine;
+    }
+
+    public void doWork() {
+        System.out.println("HappyComponent.doWork");
+    }
+
+}
+```
+
+**Java配置类实现：**<br />方案1：<br />直接调用方法返回 Bean 实例：在一个 `@Bean`方法中直接调用其他 `@Bean` 方法来获取 Bean 实例，虽然是方法调用，也是通过IoC容器获取对应的Bean，例如：
+```java
+@Configuration
+public class JavaConfig {
+
+    @Bean
+    public HappyMachine happyMachine(){
+        return new HappyMachine();
+    }
+
+    @Bean
+    public HappyComponent happyComponent(){
+        HappyComponent happyComponent = new HappyComponent();
+        //直接调用方法即可! 
+        happyComponent.setHappyMachine(happyMachine());
+        return happyComponent;
+    }
+
+}
+```
+
+方案2：<br />参数引用法：通过方法参数传递 Bean 实例的引用来解决 Bean 实例之间的依赖关系，例如：
+```java
+package com.atguigu.config;
+
+import com.atguigu.ioc.HappyComponent;
+import com.atguigu.ioc.HappyMachine;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * projectName: com.atguigu.config
+ * description: 配置HappyComponent和HappyMachine关系
+ */
+
+@Configuration
+public class JavaConfig {
+
+    @Bean
+    public HappyMachine happyMachine(){
+        return new HappyMachine();
+    }
+
+    /**
+     * 可以直接在形参列表接收IoC容器中的Bean!
+     *    情况1: 直接指定类型即可
+     *    情况2: 如果有多个bean,(HappyMachine 名称 ) 形参名称等于要指定的bean名称!
+     *           例如:
+     *               @Bean
+     *               public Foo foo1(){
+     *                   return new Foo();
+     *               }
+     *               @Bean
+     *               public Foo foo2(){
+     *                   return new Foo()
+     *               }
+     *               @Bean
+     *               public Component component(Foo foo1 / foo2 通过此处指定引入的bean)
+     */
+    @Bean
+    public HappyComponent happyComponent(HappyMachine happyMachine){
+        HappyComponent happyComponent = new HappyComponent();
+        //赋值
+        happyComponent.setHappyMachine(happyMachine);
+        return happyComponent;
+    }
+
+}
+```
+
+### 4.4.5 实验四：@Import注解
+`@Import` 注释允许从另一个配置类加载 `@Bean` 定义，如以下示例所示：
+```java
+@Configuration
+@Import({ConfigB.class})
+public class ConfigA {
+}
+```
+```java
+@Configuration
+public class ConfigB {
+}
+```
+
+ 现在，在实例化上下文时不需要同时指定 ConfigA.class 和 ConfigB.class ，只需显式提供 ConfigB，测试如下
+```java
+@Test
+public void test2() {
+    AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(ConfigA.class);
+    ConfigA beanA = applicationContext.getBean(ConfigA.class);
+    ConfigB beanB = applicationContext.getBean(ConfigB.class);
+    System.out.println("beanA = " + beanA);
+    System.out.println("beanB = " + beanB);
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693276406918-8e02c234-94ef-47ff-9198-563951a7b997.png#averageHue=%2327282c&clientId=u052a4485-9d86-4&from=paste&height=280&id=u35143e31&originHeight=350&originWidth=1258&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=39097&status=done&style=none&taskId=u6557e62d-5ce5-4358-b260-1bfc6029129&title=&width=1006.4)

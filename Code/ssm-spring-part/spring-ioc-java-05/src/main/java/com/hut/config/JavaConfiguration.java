@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
 
 /**
  * java配置类，替代xml配置文件
@@ -18,7 +21,7 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource("classpath:jdbc.properties")
 public class JavaConfiguration {
 
-    @Bean
+    @Bean("druid") // 指定名称
     public DruidDataSource dataSource(@Value("${jdbc.driver}") String driver,
                                       @Value("${jdbc.url}") String url,
                                       @Value("${jdbc.username}") String username,
@@ -29,5 +32,12 @@ public class JavaConfiguration {
         dataSource.setUsername(username);
         dataSource.setPassword(password);
         return dataSource;
+    }
+
+    @Bean
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate();
+        jdbcTemplate.setDataSource(dataSource);
+        return jdbcTemplate;
     }
 }
