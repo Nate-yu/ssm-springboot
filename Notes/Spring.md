@@ -1944,3 +1944,55 @@ public void test2() {
 }
 ```
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693276406918-8e02c234-94ef-47ff-9198-563951a7b997.png#averageHue=%2327282c&clientId=u052a4485-9d86-4&from=paste&height=280&id=u35143e31&originHeight=350&originWidth=1258&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=39097&status=done&style=none&taskId=u6557e62d-5ce5-4358-b260-1bfc6029129&title=&width=1006.4)
+
+### 4.4.6 实验五：基于注解+配置类方式整合三层架构组件
+实体类与三层架构搭建见：[https://www.yuque.com/abiny/java/fsge8ad9mdmlx7g6#tlXjX](#tlXjX)<br />三层架构IoC配置类
+```java
+@Configuration
+@ComponentScan(basePackages = "com.hut")
+@PropertySource(value = "classpath:jdbc.properties")
+public class JavaConfig {
+
+    @Bean
+    public DruidDataSource dataSource(@Value("${jdbc.driver}") String driver,
+                                      @Value("${jdbc.url}") String url,
+                                      @Value("${jdbc.username}") String username,
+                                      @Value("${jdbc.password}") String password) {
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+
+    @Bean
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate();
+        jdbcTemplate.setDataSource(dataSource);
+        return jdbcTemplate;
+    }
+}
+```
+
+运行测试
+```java
+public class JavaTest {
+
+    @Test
+    public void test() {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(JavaConfig.class);
+        StudentController controller = applicationContext.getBean(StudentController.class);
+        controller.getAllStudent();
+        applicationContext.close();
+    }
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693277806522-42d034ca-9ad0-4655-8c2a-3384ae1b7969.png#averageHue=%2325262a&clientId=u052a4485-9d86-4&from=paste&height=319&id=u10ec07f9&originHeight=399&originWidth=2133&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=77591&status=done&style=none&taskId=uadbdc4dc-edf8-4029-83f9-8a6c83aac97&title=&width=1706.4)<br />注解+配置类 IoC方式总结：
+
+- 完全摒弃了XML配置文件
+- 自定义类使用IoC和DI注解标记
+- 第三方类使用配置类声明方法+@Bean方式处理
+- 完全注解方式（配置类+注解）是现在主流配置方式
+
+
