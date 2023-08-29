@@ -1649,3 +1649,57 @@ public class SpringTest {
 7. 注解+XML IoC方式问题总结 
    1. 自定义类可以使用注解方式，但是第三方依赖的类依然使用XML方式！
    2. XML格式解析效率低！
+
+## 4.4 基于配置类方式管理Bean
+### 4.4.1 完全注解开发
+> Spring 完全注解配置（Fully Annotation-based Configuration）是指通过 Java配置类 代码来配置 Spring 应用程序，使用注解来替代原本在 XML 配置文件中的配置。相对于 XML 配置，完全注解配置具有更强的类型安全性和更好的可读性。
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693270189747-e81ea174-f144-49da-9bcf-0d4e6cc408ba.png#averageHue=%23fbfbfb&clientId=u052a4485-9d86-4&from=paste&id=u37af4057&originHeight=574&originWidth=927&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ud97772d1-a158-4237-a2bd-4ef5d828172&title=)
+
+### 4.4.2 实验一：配置类和扫描注解
+使用 @Configuration 注解将一个普通的类标记为 Spring 的配置类。
+```java
+/**
+ * java配置类，替代xml配置文件
+ * 1. 包扫描注解配置
+ * 2. 引用外部的配置文件
+ * 3. 声明第三方依赖的bean组件
+ */
+@Configuration // 标注当前类是配置类，替代application.xml 
+@ComponentScan("com.hut.ioc_01") //使用@ComponentScan注解,可以配置扫描包,替代<context:component-scan标签
+@PropertySource("classpath:jdbc.properties") //使用注解读取外部配置，替代 <context:property-placeholder标签
+public class JavaConfiguration {
+}
+```
+
+测试创建IoC容器  
+```java
+// AnnotationConfigApplicationContext 根据配置类创建 IOC 容器对象
+ApplicationContext iocContainerAnnotation = new AnnotationConfigApplicationContext(JavaConfiguration.class);
+```
+可以使用无参构造函数实例化 `AnnotationConfigApplicationContext` ，然后使用 `register()` 方法对其进行配置。此方法在以编程方式生成 `AnnotationConfigApplicationContext` 时特别有用：
+```java
+// AnnotationConfigApplicationContext-IOC容器对象
+ApplicationContext iocContainerAnnotation = new AnnotationConfigApplicationContext();
+//外部设置配置类
+iocContainerAnnotation.register(JavaConfiguration.class);
+//刷新后方可生效！！
+iocContainerAnnotation.refresh();
+```
+测试代码
+```java
+@Test
+public void test() {
+    AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(JavaConfiguration.class);
+    StudentController controller = applicationContext.getBean(StudentController.class);
+    System.out.println("controller = " + controller);
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693270554436-00d28a80-b780-4366-84c6-838577554e04.png#averageHue=%2327292c&clientId=u052a4485-9d86-4&from=paste&height=232&id=uc75d0fea&originHeight=290&originWidth=1184&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=28792&status=done&style=none&taskId=uaf7a91c4-f953-4dd1-ace5-f2d55f2b450&title=&width=947.2)
+
+总结：
+
+- @Configuration指定一个类为配置类，可以添加配置注解，替代配置xml文件
+- @ComponentScan(basePackages = {"包","包"}) 替代<context:component-scan标签实现注解扫描
+- @PropertySource("classpath:配置文件地址") 替代 <context:property-placeholder标签
+- 配合IoC/DI注解，可以进行完整注解开发

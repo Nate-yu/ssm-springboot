@@ -12,6 +12,7 @@
         <module>spring-ioc-xml-practice-02</module>
         <module>spring-ioc-annotation-03</module>
         <module>spring-annotation-practice-04</module>
+        <module>spring-ioc-java-05</module>
     </modules>
     <packaging>pom</packaging>
 
