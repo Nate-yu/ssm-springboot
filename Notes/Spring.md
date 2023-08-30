@@ -2173,4 +2173,62 @@ public class StaticProxyCalculator implements Calculator {
 
 SpringAOP框架可以简化动态代理的实现
 
+## 5.3 面向切面编程思维
 
+1. AOP：Aspect Oriented Programming面向切面编程
+>  AOP可以说是OOP（Object Oriented Programming，面向对象编程）的补充和完善。不过OOP允许开发者定义纵向的关系，但并不适合定义横向的关系，例如日志功能。日志代码往往横向地散布在所有对象层次中，而与它对应的对象的核心功能毫无关系对于其他类型的代码，如安全性、异常处理和透明的持续性也都是如此，这种散布在各处的无关的代码被称为横切（cross cutting），在OOP设计中，它导致了大量代码的重复，而不利于各个模块的重用。  
+
+AOP技术恰恰相反，它利用一种称为"横切"的技术，剖解开封装的对象内部，并将那些影响了多个类的公共行为封装到一个可重用模块，并将其命名为"Aspect"，即切面。所谓"切面"，简单说就是那些与业务无关，却为业务模块所共同调用的逻辑或责任封装起来，便于减少系统的重复代码，降低模块之间的耦合度，并有利于未来的可操作性和可维护性。使用AOP，可以在不修改原来代码的基础上添加新功能。
+
+2. AOP主要应用场景
+
+AOP（面向切面编程）是一种编程范式，它通过将通用的横切关注点（如日志、事务、权限控制等）与业务逻辑分离，使得代码更加清晰、简洁、易于维护。AOP可以应用于各种场景，以下是一些常见的AOP应用场景：
+
+   1. 日志记录：在系统中记录日志是非常重要的，可以使用AOP来实现日志记录的功能，可以在方法执行前、执行后或异常抛出时记录日志。
+   2. 事务处理：在数据库操作中使用事务可以保证数据的一致性，可以使用AOP来实现事务处理的功能，可以在方法开始前开启事务，在方法执行完毕后提交或回滚事务。
+   3. 安全控制：在系统中包含某些需要安全控制的操作，如登录、修改密码、授权等，可以使用AOP来实现安全控制的功能。可以在方法执行前进行权限判断，如果用户没有权限，则抛出异常或转向到错误页面，以防止未经授权的访问。
+   4. 性能监控：在系统运行过程中，有时需要对某些方法的性能进行监控，以找到系统的瓶颈并进行优化。可以使用AOP来实现性能监控的功能，可以在方法执行前记录时间戳，在方法执行完毕后计算方法执行时间并输出到日志中。
+   5. 异常处理：系统中可能出现各种异常情况，如空指针异常、数据库连接异常等，可以使用AOP来实现异常处理的功能，在方法执行过程中，如果出现异常，则进行异常处理（如记录日志、发送邮件等）。
+   6. 缓存控制：在系统中有些数据可以缓存起来以提高访问速度，可以使用AOP来实现缓存控制的功能，可以在方法执行前查询缓存中是否有数据，如果有则返回，否则执行方法并将方法返回值存入缓存中。
+   7. 动态代理：AOP的实现方式之一是通过动态代理，可以代理某个类的所有方法，用于实现各种功能。
+
+综上所述，AOP可以应用于各种场景，它的作用是将通用的横切关注点与业务逻辑分离，使得代码更加清晰、简洁、易于维护。
+
+3. AOP术语名词
+   1. 横切关注点
+
+从每个方法中抽取出来的同一类非核心业务。在同一个项目中，我们可以使用多个横切关注点对相关方法进行多个不同方面的增强。这个概念不是语法层面天然存在的，而是根据附加功能的逻辑上的需要：有十个附加功能，就有十个横切关注点。<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693378196193-adac2bf9-afb9-4f6d-93f9-77101f2699f8.png#averageHue=%23030000&clientId=u25d4278a-02a6-4&from=paste&height=316&id=u2db212e2&originHeight=631&originWidth=1219&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u706c69f5-4fdb-4b71-8d9e-06c7f4cf20c&title=&width=610)
+
+   2. 增强（通知）
+
+每一个横切关注点上要做的事情都需要写一个方法来实现，这样的方法就叫增强（通知）方法。
+
+   - 前置通知：在被代理的目标方法前执行
+   - 返回通知：在被代理的目标方法成功结束后执行（**寿终正寝**）
+   - 异常通知：在被代理的目标方法异常结束后执行（**死于非命**）
+   - 后置通知：在被代理的目标方法最终结束后执行（**盖棺定论**）
+   - 环绕通知：使用try...catch...finally结构围绕整个被代理的目标方法，包括上面四种通知对应的所有位置
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693378361418-de811a93-614d-4037-bd4c-ff647b66aea6.png#averageHue=%230a0303&clientId=u25d4278a-02a6-4&from=paste&height=397&id=ubddc9fc9&originHeight=530&originWidth=771&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ub05cab4c-1352-43e0-a6d6-1947c92634c&title=&width=578)
+
+   3. 连接点 joinpoint
+
+这也是一个纯逻辑概念，不是语法定义的。指那些被拦截到的点。在 Spring 中，可以被动态代理拦截目标类的方法<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693378433694-58c7a578-beb0-4637-b156-7b919d6320f0.png#averageHue=%23535353&clientId=u25d4278a-02a6-4&from=paste&height=649&id=ud51449b6&originHeight=865&originWidth=1350&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u95c78a95-bca5-4388-a43d-7223d176610&title=&width=1013)
+
+   4. 切入点 pointcut
+
+定位连接点的方式，或者可以理解成被选中的连接点。是一个表达式，比如execution(* com.spring.service.impl.*.*(..))。符合条件的每个方法都是一个具体的连接点。
+
+   5. 切面 aspect： 切入点和通知的结合，是一个类
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693378894446-144cfc26-17d6-4e15-8fd9-bed627e6c833.png#averageHue=%23090303&clientId=u25d4278a-02a6-4&from=paste&height=398&id=u8f34b70c&originHeight=531&originWidth=771&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ued8f012b-b7d3-48ee-9b6f-d75ba80e722&title=&width=578)
+
+   6. 目标 target： 被代理的目标对象  
+   7. 代理 poxy： 向目标对象应用通知之后创建的代理对象  
+   8. 织入 weave： 指把通知应用到目标上，生成代理对象的过程。可以在编译期织入，也可以在运行期织入，Spring采用后者
+
+## 5.4 SpringAOP 框架介绍
+
+1. AOP一种区别于OOP的编程思维，用来完善和解决OOP的非核心代码冗余和不方便统一维护问题
+2. 代理技术（动态代理|静态代理）是实现AOP思维编程的具体技术，但是自己使用动态代理实现代码比较繁琐
+3. Spring AOP框架，基于AOP编程思维，封装动态代理技术，简化动态代理技术实现的框架。SpringAOP内部帮助我们实现动态代理，我们只需写少量的配置，指定生效范围即可，即可完成面向切面思维编程的实现
