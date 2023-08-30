@@ -2041,3 +2041,136 @@ public class JavaTest {
 }
 ```
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693278912686-dbe5e704-fc13-4045-874c-a34e1a2e4328.png#averageHue=%23282a2e&clientId=u052a4485-9d86-4&from=paste&height=301&id=ua71f5992&originHeight=376&originWidth=964&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=32358&status=done&style=none&taskId=u2befd97f-30f5-41d7-ac66-d184da75737&title=&width=771)
+
+# 5 Spring AOP面向切面编程
+## 5.1 场景设定
+
+1. 准备AOP项目
+
+项目名：spring-aop-annotation-08
+
+2. 声明接口
+```java
+/**
+ *  + - * / 运算的标准接口!
+ */
+public interface Calculator {
+    
+    int add(int i, int j);
+    
+    int sub(int i, int j);
+    
+    int mul(int i, int j);
+    
+    int div(int i, int j);
+    
+}
+```
+
+3. 接口实现
+```java
+/**
+ * 实现计算接口,单纯添加 + - * / 实现
+ */
+public class CalculatorPureImpl implements Calculator {
+    
+    @Override
+    public int add(int i, int j) {
+
+        int result = i + j;
+
+        return result;
+    }
+    
+    @Override
+    public int sub(int i, int j) {
+
+        int result = i - j;
+
+        return result;
+    }
+    
+    @Override
+    public int mul(int i, int j) {
+    
+        int result = i * j;
+    
+        return result;
+    }
+    
+    @Override
+    public int div(int i, int j) {
+    
+        int result = i / j;
+    
+        return result;
+    }
+}
+```
+
+4. 新需求：声明带日志接口
+
+ 需要在每个方法中，添加控制台输出，输出参数和输出计算后的返回值<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693358657926-48ce6600-7dbd-4a20-801f-1c88de7940f3.png#averageHue=%2312110e&clientId=uf389e789-62d3-4&from=paste&id=uc2e59478&originHeight=487&originWidth=1160&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ueafeb6f2-1a89-4cb6-bbc9-60a38f3b2dd&title=)
+
+5. 代码问题分析 
+   1. 代码缺陷 
+      - 对核心业务功能有干扰
+      - 附加功能代码重复，分散在各个业务功能方法中，冗余，且不方便统一维护
+   2.  解决思路<br />核心就是：解耦。我们需要把附加功能从业务功能代码中抽取出来。<br />将重复的代码统一提取，并且[[动态插入]]到每个业务方法！ 
+
+## 5.2 代理模式
+
+1. 代理模式
+> 二十三种设计模式中的一种，属于结构型模式。它的作用就是通过提供一个代理类，让我们在调用目标方法的时候，不再是直接对目标方法进行调用，而是通过代理类间接调用。让不属于目标方法核心逻辑的代码从目标方法中剥离出来——解耦。调用目标方法时先调用代理对象的方法，减少对目标方法的调用和打扰，同时让附加功能能够集中在一起也有利于统一维护。  
+
+无代理场景：<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693360829858-1f453c0b-cbac-451b-9e5a-7a366254572e.png#averageHue=%23000000&clientId=uf389e789-62d3-4&from=paste&id=ub079907c&originHeight=438&originWidth=385&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u11b0321e-dbcd-4da5-925e-1f484e2cdce&title=)<br />有代理场景：<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693360848053-27411b7d-1cba-4b99-84ce-b9581b664e27.png#averageHue=%23000000&clientId=uf389e789-62d3-4&from=paste&id=ua7c95234&originHeight=445&originWidth=635&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ue8273c15-ee70-4263-bf34-aa3cfb542c3&title=)<br />代理：将非核心逻辑剥离出来以后，封装这些非核心逻辑的类、对象、方法<br />目标：被代理“套用”了核心逻辑代码的类、对象、方法  
+
+2. 静态代理
+
+主动创建代理类：
+```java
+/**
+ * 静态代理类
+ */
+public class StaticProxyCalculator implements Calculator {
+
+    private Calculator calculator;
+
+    /**
+     * 使用构造函数传入目标
+     * @param target
+     */
+    public StaticProxyCalculator(Calculator target) {
+        this.calculator =  target;
+    }
+
+    @Override
+    public int add(int i, int j) {
+        // 非核心业务交给代理
+        System.out.println("i = " + i + ", j = " + j);
+        // 调用目标
+        int result = calculator.add(1, 1);
+        System.out.println("result = " + result);
+        return result;
+    }
+……
+```
+静态代理确实实现了解耦，但是由于代码都写死了，完全不具备任何的灵活性。就拿日志功能来说，将来其他地方也需要附加日志，那还得再声明更多个静态代理类，那就产生了大量重复的代码，日志功能还是分散的，没有统一管理
+
+提出进一步的需求：将日志功能集中到一个代理类中，将来有任何日志需求，都通过这一个代理类来实现。这就需要使用动态代理技术了
+
+3. 动态代理
+
+技术分类：
+
+   -  JDK动态代理：JDK原生的实现方式，需要被代理的目标类必须**实现接口**，他会根据目标类的接口动态生成一个代理对象，代理对象和目标对象有相同的接口  
+   -  cglib：通过继承被代理的目标类实现代理，所以不需要目标类实现接口
+
+4. 代理总结
+- **代理方式可以解决附加功能代码干扰核心代码和不方便统一维护的问题**
+- 他主要是将附加功能代码提取到代理中执行，不干扰目标核心代码！
+- 但是我们也发现，无论使用静态代理和动态代理(jdk,cglib)，程序员的工作都比较繁琐，需要自己编写代理工厂等
+
+SpringAOP框架可以简化动态代理的实现
+
+
