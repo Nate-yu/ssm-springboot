@@ -2024,7 +2024,7 @@ public class JavaTest {
 </dependency>
 ```
 
-3. 整合测试注解使用
+3. 整合测试注解（@SpringJUnitConfig）使用
 ```java
 //@SpringJUnitConfig(locations = {"classpath:spring-context.xml"})  //指定配置文件xml
 @SpringJUnitConfig(classes = {JavaConfig.class}) // 指定配置类
@@ -2232,3 +2232,172 @@ AOP（面向切面编程）是一种编程范式，它通过将通用的横切�
 1. AOP一种区别于OOP的编程思维，用来完善和解决OOP的非核心代码冗余和不方便统一维护问题
 2. 代理技术（动态代理|静态代理）是实现AOP思维编程的具体技术，但是自己使用动态代理实现代码比较繁琐
 3. Spring AOP框架，基于AOP编程思维，封装动态代理技术，简化动态代理技术实现的框架。SpringAOP内部帮助我们实现动态代理，我们只需写少量的配置，指定生效范围即可，即可完成面向切面思维编程的实现
+
+## 5.5 **Spring AOP基于注解方式实现和细节**
+### 5.5.1 Spring AOP 底层技术组成
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693446569316-275e6c6d-7f72-4911-b716-f2ce92a223ff.png#averageHue=%23101010&clientId=u19c6f95f-3302-4&from=paste&id=u19785230&originHeight=556&originWidth=700&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u37e6fbdc-4739-498c-8ab5-240f858a3ae&title=)
+
+- 动态代理（InvocationHandler）：JDK原生的实现方式，需要被代理的目标类必须实现接口。因为这个技术要求代理对象和目标对象实现同样的接口（兄弟两个拜把子模式）。
+- cglib：通过继承被代理的目标类（认干爹模式）实现代理，所以不需要目标类实现接口。
+- AspectJ：早期的AOP实现的框架，SpringAOP借用了AspectJ中的AOP注解。
+
+### 5.5.2 初步实现
+
+1. 加入依赖
+```xml
+<!-- spring-aspects会帮我们传递过来aspectjweaver -->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+    <version>6.0.6</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aspects</artifactId>
+    <version>6.0.6</version>
+</dependency>
+```
+
+2. 准备接口
+```java
+public interface Calculator {
+    
+    int add(int i, int j);
+    
+    int sub(int i, int j);
+    
+    int mul(int i, int j);
+    
+    int div(int i, int j);
+    
+}
+```
+
+3. 纯净实现类
+```java
+package com.hut.service.impl;
+
+
+import com.hut.service.Calculator;
+import org.springframework.stereotype.Component;
+
+/**
+ * 实现计算接口,单纯添加 + - * / 实现
+ * aop只针对ioc容器对象创建代理对象，代理对象会存储到ioc容器中
+ */
+@Component
+public class CalculatorPureImpl implements Calculator {
+    
+    @Override
+    public int add(int i, int j) {
+    
+        int result = i + j;
+    
+        return result;
+    }
+    
+    @Override
+    public int sub(int i, int j) {
+    
+        int result = i - j;
+    
+        return result;
+    }
+    
+    @Override
+    public int mul(int i, int j) {
+    
+        int result = i * j;
+    
+        return result;
+    }
+    
+    @Override
+    public int div(int i, int j) {
+    
+        int result = i / j;
+    
+        return result;
+    }
+}
+```
+
+4. 声明切面类
+```java
+/**
+ * 增强类的内部要存储增强代码
+ * 1. 定义方法存储增强代码
+ *  具体定义几个方法是根据插入位置决定的
+ * 2. 使用注解配置来指定目标方法的位置（前置@Before 后置@AfterReturning 异常@AfterThrowing 最后@After 环绕@Around）
+ * 3. 配置切点表达式
+ * 4. 补全注解
+ *  加入ioc容器 @Component
+ *  配置切面 @Aspect = 切点 + 增强
+ * 5. 开启aspect注解的支持
+ */
+@Aspect
+@Component
+public class LogAdvice {
+
+    @Before("execution(* com.hut.service.impl.*.*(..))")
+    public void start() {
+        System.out.println("方法开始了");
+    }
+
+    @After("execution(* com.hut.service.impl.*.*(..))")
+    public void after() {
+        System.out.println("方法结束了");
+    }
+
+    @AfterThrowing("execution(* com.hut.service.impl.*.*(..))")
+    public void error() {
+        System.out.println("方法报错了");
+    }
+}
+
+```
+
+5. 开启aspectj注解支持（类似于扫描包中的注解）
+   1. xml方式
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- 进行包扫描-->
+    <context:component-scan base-package="com.hut" />
+    <!-- 开启aspectj框架注解支持-->
+    <aop:aspectj-autoproxy />
+</beans>
+```
+
+   2. 配置类方式
+```java
+@Configuration
+@ComponentScan("com.hut")
+@EnableAspectJAutoProxy // 开启aspectj注解的支持
+public class JavaConfig {
+}
+```
+
+6. 测试效果
+```java
+@SpringJUnitConfig(value = JavaConfig.class) // 加载配置类
+public class SpringAopTest {
+
+    // 这里只能用接口来声明对象，不能用实现类
+    @Autowired
+    private Calculator calculator;
+
+    @Test
+    public void test(){
+        int add = calculator.add(1, 1);
+        System.out.println("add = " + add);
+    }
+}
+```
+输出结果：<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693447480426-646e2ed5-d629-4337-a4fc-41269e2d4a09.png#averageHue=%2327282c&clientId=uee4a6d67-3ac9-4&from=paste&height=284&id=uddda20a7&originHeight=355&originWidth=1090&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=27093&status=done&style=none&taskId=u87733280-ba7a-4df5-ac82-07d3574c876&title=&width=872)
