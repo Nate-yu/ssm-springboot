@@ -2401,3 +2401,59 @@ public class SpringAopTest {
 }
 ```
 输出结果：<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693447480426-646e2ed5-d629-4337-a4fc-41269e2d4a09.png#averageHue=%2327282c&clientId=uee4a6d67-3ac9-4&from=paste&height=284&id=uddda20a7&originHeight=355&originWidth=1090&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=27093&status=done&style=none&taskId=u87733280-ba7a-4df5-ac82-07d3574c876&title=&width=872)
+
+### 5.5.3 获取通知细节信息
+
+1. JoinPoint接口
+
+需要获取方法签名、传入的实参等信息时，可以在通知方法声明JoinPoint类型的形参。
+
+- 要点1：JoinPoint 接口通过 getSignature() 方法获取目标方法的签名（方法声明时的完整信息）
+- 要点2：通过目标方法签名对象获取方法名
+- 要点3：通过 JoinPoint 对象获取外界调用目标方法时传入的实参列表组成的数组
+```java
+@Before("execution(* com..impl.*.*(..))")
+public void before(JoinPoint joinPoint) {
+    // 1. 获取方法所属类的信息
+    String simpleName = joinPoint.getTarget().getClass().getSimpleName();
+    System.out.println("simpleName = " + simpleName);
+
+    // 2. 获取方法名
+    String methodName = joinPoint.getSignature().getName();
+    System.out.println("methodName = " + methodName);
+
+    // 3. 获取方法参数
+    Object[] args = joinPoint.getArgs();
+    System.out.println("args = " + args);
+
+    // 4. 获取访问修饰符
+    int modifiers = joinPoint.getSignature().getModifiers();
+    String s = Modifier.toString(modifiers);
+    System.out.println("s = " + s);
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693451567372-de0364e7-449a-4d36-a536-c6907454a7b5.png#averageHue=%2327292d&clientId=uee4a6d67-3ac9-4&from=paste&height=282&id=ucce8f674&originHeight=353&originWidth=1014&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=44031&status=done&style=none&taskId=u77714de6-0e39-487f-b2ee-abda0962e81&title=&width=811.2)
+
+2. 方法返回值
+
+ 在返回通知中，通过@AfterReturning注解的returning属性获取目标方法的返回值
+```java
+// (Object result) result用于接收返回结果
+// @AfterReturning(value = "execution(* com..impl.*.*(..))", returning = "形参名")
+@AfterReturning(value = "execution(* com..impl.*.*(..))", returning = "result")
+public void afterReturning(JoinPoint joinPoint, Object result) {
+
+}
+```
+
+3. 异常对象捕捉
+
+ 	在异常通知中，通过@AfterThrowing注解的throwing属性获取目标方法抛出的异常对象  
+```java
+// (Throwable throwable) throwable用于接收异常信息
+// @AfterThrowing(value = "execution(* com..impl.*.*(..))",throwing = "形参名")
+@AfterThrowing(value = "execution(* com..impl.*.*(..))",throwing = "throwable")
+public void afterThrowing(JoinPoint joinPoint, Throwable throwable) {
+
+}
+```
