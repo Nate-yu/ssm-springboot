@@ -2457,3 +2457,86 @@ public void afterThrowing(JoinPoint joinPoint, Throwable throwable) {
 
 }
 ```
+
+### 5.5.4 切点表达式语法
+
+1. 切点表达式作用
+
+ AOP切点表达式（Pointcut Expression）是一种用于指定切点的语言，它可以通过定义匹配规则，来选择需要被切入的目标对象<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693532734953-a55b5e80-a6fe-4878-b230-2f40ca56cfb0.png#averageHue=%23e8e7e7&clientId=u07b4cbce-7020-4&from=paste&id=u58dd87c3&originHeight=286&originWidth=476&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ud1eaf23e-d344-4ded-8a52-76bd81d7b40&title=)
+
+2. 切点表达式语法
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1693532885004-ffa70662-6e3b-4e0c-89bd-4d980877921a.png#averageHue=%23efefef&clientId=u07b4cbce-7020-4&from=paste&height=390&id=ud1d57035&originHeight=488&originWidth=1606&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=209539&status=done&style=none&taskId=u7410feef-b971-413f-80e4-ea6883668e0&title=&width=1284.8)<br />语法细节
+
+   1. `execution()`固定开头
+   2. 方法访问修饰符
+```java
+public private 直接描述对应修饰符即可
+```
+
+   3. 方法返回值
+```java
+int String void 直接描述返回值类型
+```
+注意：<br />特殊情况 不考虑 访问修饰符和返回值<br />  execution(* *) 这是错误语法<br />  execution(*)相当于访问修饰符和返回值全部不考虑了
+
+   4. 指定包的地址
+```
+固定的包: com.hut.api | service | dao
+单层的任意命名: com.hut.*  = com.hut.api  com.hut.dao  * = 任意一层的任意命名
+任意层任意命名: com.. = com.hut.api.erdaye com.a.a.a.a.a.a.a  ..任意层,任意命名 用在包上!
+注意: ..不能用作包开头   public int .. 错误语法  com..
+找到任何包下: *..
+```
+
+   5. 指定类名称
+```
+固定名称: UserService
+任意类名: *
+部分任意: com..service.impl.*Impl
+任意包任意类: *..*
+```
+
+   6. 指定方法名称
+```
+语法和类名一致
+任意访问修饰符,任意类的任意方法: * *..*.*
+```
+
+   7.  方法参数
+```
+方法的参数描述
+   具体值: (String,int) != (int,String) 没有参数 ()
+   模糊值: 任意参数 有 或者 没有 (..)  ..任意参数的意思
+   部分具体和模糊:
+     第一个参数是字符串的方法 (String..)
+     最后一个参数是字符串 (..String)
+     字符串开头,int结尾 (String..int)
+     包含int类型(..int..)
+```
+
+3. 切点表达式案例
+   1.  查询某包某类下，访问修饰符是公有，返回值是int的全部方法
+```java
+public int xx.xx.Yy.*(..)
+```
+
+   2. 查询某包下某类中第一个参数是String的方法
+```java
+* xx.xx.Yy.*(String..)
+```
+
+   3. 查询全部包下，无参数的方法
+```java
+* *..*.*()
+```
+
+   4. 查询com包下，以int参数类型结尾的方法
+```java
+* com..*.*(..int)
+```
+
+   5. 查询指定包下，Service开头类的私有返回值int的无参数方法  
+```java
+private int xx.xx.Service*.*()
+```
