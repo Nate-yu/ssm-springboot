@@ -2595,3 +2595,62 @@ public void before(JoinPoint joinPoint) {
 @Before("com.hut.pointcut.MyPointCut.pc()")
 public void start() {
 ```
+
+### 5.5.6 环绕通知
+环绕通知对应整个 try...catch...finally 结构，包括前面四种通知的所有功能
+```java
+@Component
+@Aspect
+public class TxAroundAdvice {
+
+    /**
+     * 环绕通知，需要在通知中定义目标方法的执行
+     * @param joinPoint 目标方法（获取目标方法信息，多了一个执行方法）
+     * @return 目标方法的返回值
+     */
+    @Around("com.hut.pointcut.MyPointCut.pc()")
+    public Object transaction(ProceedingJoinPoint joinPoint) {
+        // 保证目标方法被执行
+        Object[] args = joinPoint.getArgs();
+        Object result = null;
+        try {
+            // 增强代码
+            System.out.println("事务开始");
+            result = joinPoint.proceed(args);
+            System.out.println("事务结束");
+        } catch (Throwable e) {
+            System.out.println("事务回滚");
+            // 必须再抛出异常
+            throw new RuntimeException(e);
+        } finally {
+
+        }
+        return result;
+    }
+}
+```
+
+### 5.5.7 切面优先级设置
+相同目标方法上同时存在多个切面时，切面的优先级控制切面的内外嵌套顺序：
+
+- 优先级高的切面：外面
+- 优先级低的切面：里面
+
+使用`@Order`注解可以控制切面的优先级： 
+
+- @Order(较小的数)：优先级高
+- @Order(较大的数)：优先级低
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694055788380-f4fac7c6-1c4b-4741-8afa-e62450b00109.png#averageHue=%23000000&clientId=uc35d92c8-2469-4&from=paste&id=u65ca70aa&originHeight=570&originWidth=861&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u6339ecc5-d5ca-4c4c-81c3-e12bc9b793c&title=)
+
+实际意义：<br />实际开发时，如果有多个切面嵌套的情况，要慎重考虑。例如：如果事务切面优先级高，那么在缓存中命中数据的情况下，事务切面的操作都浪费了。<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694056145559-1afafd78-7734-40c5-a87b-75d0be13d5c0.png#averageHue=%23000000&clientId=uc35d92c8-2469-4&from=paste&id=u9e62b05b&originHeight=570&originWidth=842&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u629f626d-448a-4b84-97b8-49ccf2f77e6&title=)<br /> 	此时应该将缓存切面的优先级提高，在事务操作之前先检查缓存中是否存在目标数据。<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694056197887-dcb0b736-637e-4cf3-beef-d978f0a0adad.png#averageHue=%23000000&clientId=uc35d92c8-2469-4&from=paste&id=u70767a13&originHeight=570&originWidth=890&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u1703ee85-60db-4c65-9d2d-ba2719f626b&title=)
+
+### 5.5.8 CGLib动态代理
+
+1. 如果目标类有接口，选择使用jdk动态代理
+2. 如果目标类没有接口，选择cglib动态代理
+3. 如果有接口，接口接值
+4. 如果没有接口，类进行接值
+
+### 5.5.9 注解实现AOP小结
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694056372608-663b8828-0f47-461f-adc5-843456142813.png#averageHue=%23000000&clientId=uc35d92c8-2469-4&from=paste&id=u96cacacb&originHeight=907&originWidth=1459&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u87e9a12f-dbb9-4a21-b187-9e0725ca85f&title=)

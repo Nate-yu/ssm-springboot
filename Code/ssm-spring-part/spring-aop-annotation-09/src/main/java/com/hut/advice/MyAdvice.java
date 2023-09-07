@@ -1,8 +1,10 @@
 package com.hut.advice;
 
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.*;
-import org.springframework.stereotype.Component;
+import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.AfterThrowing;
+import org.aspectj.lang.annotation.Before;
 
 import java.lang.reflect.Modifier;
 
@@ -19,8 +21,8 @@ import java.lang.reflect.Modifier;
  *      @AfterThrowing(value = "execution(* com..impl.*.*(..))",throwing = "形参名")
  */
 
-@Aspect
-@Component
+/*@Aspect
+@Component*/
 public class MyAdvice {
 
     @Before("com.hut.pointcut.MyPointCut.myPc()")
