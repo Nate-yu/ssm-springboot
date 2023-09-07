@@ -2540,3 +2540,58 @@ public int xx.xx.Yy.*(..)
 ```java
 private int xx.xx.Service*.*()
 ```
+
+### 5.5.5 提取切点表达式
+>  我们可以将切点提取，在增强上进行引用即可
+
+1. 同一类内部引用
+   1. 提取
+```java
+//定义一个空方法，加入注解@Pointcut()
+@Pointcut("execution(* com.hut.service.impl.*.*(..))")
+public void pc() {}
+```
+
+   2. 引用
+```java
+// 增强注解中引用切点表达式的方法
+@Before("pc()")
+public void start() {
+    System.out.println("方法开始了");
+}
+```
+
+2.  不同类中引用  
+
+不同类在引用切点，只需要添加类的全限定符+方法名即可！
+```java
+@Before(value = "com.atguigu.spring.aop.aspect.LogAspect.declarPointCut()")
+public Object roundAdvice(ProceedingJoinPoint joinPoint) {
+```
+
+3. 统一切点管理
+
+ 	将切点表达式统一存储到一个类中进行集中管理和维护，单独维护切点表达式
+```java
+/**
+ * 用于存储切点的类
+ */
+@Component
+public class MyPointCut {
+    @Pointcut("execution(* com.hut.service.impl.*.*(..))")
+    public void pc() {}
+
+    @Pointcut("execution(* com..impl.*.*(..))")
+    public void myPc(){}
+}
+```
+
+引用
+```java
+@Before("com.hut.pointcut.MyPointCut.myPc()")
+public void before(JoinPoint joinPoint) {
+...
+
+@Before("com.hut.pointcut.MyPointCut.pc()")
+public void start() {
+```

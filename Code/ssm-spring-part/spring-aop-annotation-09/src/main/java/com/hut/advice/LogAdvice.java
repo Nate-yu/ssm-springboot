@@ -1,9 +1,6 @@
 package com.hut.advice;
 
-import org.aspectj.lang.annotation.After;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.*;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,17 +18,30 @@ import org.springframework.stereotype.Component;
 @Component
 public class LogAdvice {
 
-    @Before("execution(* com.hut.service.impl.*.*(..))")
+    /*
+    * 切点表达式的提取和复用
+    * 1. 当前类中提取
+    *     定义一个空方法
+    *     注解@Pointcut()
+    *     增强注解中引用切点表达式的方法
+    * 2. 创建一个存储切点的类
+    *     单独维护切点表达式
+    * */
+
+/*    @Pointcut("execution(* com.hut.service.impl.*.*(..))")
+    public void pc() {}*/
+
+    @Before("com.hut.pointcut.MyPointCut.pc()")
     public void start() {
         System.out.println("方法开始了");
     }
 
-    @After("execution(* com.hut.service.impl.*.*(..))")
+    @After("com.hut.pointcut.MyPointCut.pc()")
     public void after() {
         System.out.println("方法结束了");
     }
 
-    @AfterThrowing("execution(* com.hut.service.impl.*.*(..))")
+    @AfterThrowing("com.hut.pointcut.MyPointCut.pc()")
     public void error() {
         System.out.println("方法报错了");
     }

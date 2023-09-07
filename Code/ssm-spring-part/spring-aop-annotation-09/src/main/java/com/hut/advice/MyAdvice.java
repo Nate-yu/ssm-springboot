@@ -23,7 +23,7 @@ import java.lang.reflect.Modifier;
 @Component
 public class MyAdvice {
 
-    @Before("execution(* com..impl.*.*(..))")
+    @Before("com.hut.pointcut.MyPointCut.myPc()")
     public void before(JoinPoint joinPoint) {
         // 1. 获取方法所属类的信息
         String simpleName = joinPoint.getTarget().getClass().getSimpleName();
@@ -43,17 +43,17 @@ public class MyAdvice {
         System.out.println("s = " + s);
     }
 
-    @AfterReturning(value = "execution(* com..impl.*.*(..))", returning = "result")
+    @AfterReturning(value = "com.hut.pointcut.MyPointCut.myPc()", returning = "result")
     public void afterReturning(JoinPoint joinPoint, Object result) {
 
     }
 
-    @After("execution(* com..impl.*.*(..))")
+    @After("com.hut.pointcut.MyPointCut.myPc()")
     public void after(JoinPoint joinPoint) {
 
     }
 
-    @AfterThrowing(value = "execution(* com..impl.*.*(..))",throwing = "throwable")
+    @AfterThrowing(value = "com.hut.pointcut.MyPointCut.myPc()",throwing = "throwable")
     public void afterThrowing(JoinPoint joinPoint, Throwable throwable) {
 
     }
