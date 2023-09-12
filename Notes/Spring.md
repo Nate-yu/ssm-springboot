@@ -2685,3 +2685,115 @@ DataSourceTransactionManager类中的主要方法：
 - doResume()：恢复挂起的事务
 - doCommit()：提交事务
 - doRollback()：回滚事务
+
+## 6.2 基于注解的声明式事务
+### 6.2.1 准备工作
+创建项目：ssm-spring-part/spring-tx-annotation-10
+
+1. 在父项目中加入依赖
+```xml
+<!-- 声明式事务依赖-->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>6.0.6</version>
+</dependency>
+```
+
+2. 外部配置文件 jdbc.properties
+```properties
+jdbc.url=jdbc:mysql://localhost:3306/studb?useUnicode=true&characterEncoding=UTF-8
+jdbc.driver=com.mysql.cj.jdbc.Driver
+jdbc.username=root
+jdbc.password=root
+```
+
+3. Spring配置类
+```java
+@Configuration
+@ComponentScan("com.hut")
+@PropertySource("classpath:jdbc.properties")
+public class JavaConfig {
+
+    @Value("${jdbc.driver}")
+    private String driver;
+    @Value("${jdbc.url}")
+    private String url;
+    @Value("${jdbc.username}")
+    private String username;
+    @Value("${jdbc.password}")
+    private String password;
+
+    // druid连接池实例化
+    @Bean
+    public DataSource dataSource() {
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+
+    // jdbcTemplate实例化
+    @Bean
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate();
+        jdbcTemplate.setDataSource(dataSource);
+        return jdbcTemplate;
+    }
+}
+```
+
+4. 准备dao/service层
+
+dao层
+```java
+@Repository
+public class StudentDao {
+    
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    
+    public void updateNameById(String name,Integer id){
+        String sql = "update students set name = ? where id = ? ;";
+        int rows = jdbcTemplate.update(sql, name, id);
+    }
+
+    public void updateAgeById(Integer age,Integer id){
+        String sql = "update students set age = ? where id = ? ;";
+        jdbcTemplate.update(sql,age,id);
+    }
+}
+```
+service层
+```java
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentDao studentDao;
+
+    public void changeInfo(){
+        studentDao.updateAgeById(100,1);
+        System.out.println("-----------");
+        studentDao.updateNameById("test1",1);
+    }
+}
+```
+
+5. 测试环境搭建
+```java
+@SpringJUnitConfig(JavaConfig.class)
+public class SpringTxTest {
+
+    @Autowired
+    private StudentService studentService;
+
+    @Test
+    public void test() {
+        studentService.changeInfo();
+    }
+}
+```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694504316210-ce7c3751-6b27-4237-ab0a-45ade829574d.png#averageHue=%23222427&clientId=udf4b254f-cd41-4&from=paste&height=304&id=u505ba6ce&originHeight=456&originWidth=1031&originalType=binary&ratio=1.5&rotation=0&showTitle=false&size=50129&status=done&style=none&taskId=ub24384dc-e215-4098-abe2-30eda482d63&title=&width=687.3333333333334)

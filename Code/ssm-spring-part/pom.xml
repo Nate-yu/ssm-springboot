@@ -17,6 +17,7 @@
         <module>spring-test-annotation-07</module>
         <module>spring-aop-annotation-08</module>
         <module>spring-aop-annotation-09</module>
+        <module>spring-tx-annotation-10</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -73,6 +74,13 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
+            <version>6.0.6</version>
+        </dependency>
+
+        <!-- 声明式事务依赖-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
             <version>6.0.6</version>
         </dependency>
 
