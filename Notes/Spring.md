@@ -2654,3 +2654,34 @@ public class TxAroundAdvice {
 
 ### 5.5.9 注解实现AOP小结
 ![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694056372608-663b8828-0f47-461f-adc5-843456142813.png#averageHue=%23000000&clientId=uc35d92c8-2469-4&from=paste&id=u96cacacb&originHeight=907&originWidth=1459&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u87e9a12f-dbb9-4a21-b187-9e0725ca85f&title=)
+
+# 6 Spring声明式事务
+## 6.1 声明式事务概念
+### 6.1.1 编程式事务
+> 编程式事务是指手动编写程序来管理事务，即通过编写代码的方式直接控制事务的提交和回滚。在 Java 中，通常使用事务管理器(如 Spring 中的 `PlatformTransactionManager`)来实现编程式事务。
+
+编程式事务的主要优点是灵活性高，可以按照自己的需求来控制事务的粒度、模式等等。但是，编写大量的事务控制代码容易出现问题，对代码的可读性和可维护性有一定影响。<br />编程式的实现方式存在缺陷：
+
+- 细节没有被屏蔽：具体操作过程中，所有细节都需要程序员自己来完成，比较繁琐。
+- 代码复用性不高：如果没有有效抽取出来，每次实现功能都需要自己编写代码，代码就没有得到复用。
+
+### 6.1.2 声明式事务
+声明式事务是指使用`注解`或 `XML` 配置的方式来控制事务的提交和回滚。<br />开发者只需要添加配置即可， 具体事务的实现由第三方框架实现，避免我们直接进行事务操作<br />使用声明式事务可以将事务的控制和业务逻辑分离开来，提高代码的可读性和可维护性。<br />区别：<br />- 编程式事务需要手动编写代码来管理事务<br />- 而声明式事务可以通过配置文件或注解来控制事务
+
+### 6.1.3 Spring事务管理器
+
+1. Spring声明式事务对应依赖 
+- spring-tx: 包含声明式事务实现的基本规范（事务管理器规范接口和事务增强等等）
+- spring-jdbc: 包含DataSource方式事务管理器实现类DataSourceTransactionManager
+- spring-orm: 包含其他持久层框架的事务管理器实现类例如Hibernate/Jpa等
+2.  Spring声明式事务对应事务管理器接口
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694502090657-a0436d84-7cf8-4520-a4bf-ff84e483e01b.png#averageHue=%23f7f6ef&clientId=udf4b254f-cd41-4&from=paste&id=u16e1b055&originHeight=217&originWidth=672&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u38b67553-d12f-4a5f-98da-a474bc567e0&title=)<br />我们现在要使用的事务管理器是org.springframework.jdbc.datasource.DataSourceTransactionManager，将来整合 JDBC方式、JdbcTemplate方式、Mybatis方式的事务实现
+
+DataSourceTransactionManager类中的主要方法：
+
+- doBegin()：开启事务
+- doSuspend()：挂起事务
+- doResume()：恢复挂起的事务
+- doCommit()：提交事务
+- doRollback()：回滚事务
