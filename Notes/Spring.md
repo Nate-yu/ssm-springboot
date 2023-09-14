@@ -2797,3 +2797,171 @@ public class SpringTxTest {
 }
 ```
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694504316210-ce7c3751-6b27-4237-ab0a-45ade829574d.png#averageHue=%23222427&clientId=udf4b254f-cd41-4&from=paste&height=304&id=u505ba6ce&originHeight=456&originWidth=1031&originalType=binary&ratio=1.5&rotation=0&showTitle=false&size=50129&status=done&style=none&taskId=ub24384dc-e215-4098-abe2-30eda482d63&title=&width=687.3333333333334)
+
+### 6.2.2 基本事务控制
+
+1. 在配置类中配置事务管理器（数据库配置）
+```java
+@Configuration
+@ComponentScan("com.hut")
+@PropertySource("classpath:jdbc.properties")
+//@EnableAspectJAutoProxy // 开启aspectj注解支持
+@EnableTransactionManagement // 开启事务注解的支持
+public class JavaConfig {
+
+    @Value("${jdbc.driver}")
+    private String driver;
+    @Value("${jdbc.url}")
+    private String url;
+    @Value("${jdbc.username}")
+    private String username;
+    @Value("${jdbc.password}")
+    private String password;
+
+    // druid连接池实例化
+    @Bean
+    public DataSource dataSource() {
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+
+    // jdbcTemplate实例化
+    @Bean
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate();
+        jdbcTemplate.setDataSource(dataSource);
+        return jdbcTemplate;
+    }
+
+    /**
+     * 装配事务管理实现对象
+     * @param dataSource
+     */
+    @Bean
+    public TransactionManager transactionManager(DataSource dataSource) {
+        // 内部要进行事务的操作，基于的连接池
+        DataSourceTransactionManager dataSourceTransactionManager = new DataSourceTransactionManager();
+        // 需要连接池对象
+        dataSourceTransactionManager.setDataSource(dataSource);
+        return dataSourceTransactionManager;
+    }
+}
+```
+
+2.  使用声明事务注解@Transactional  
+```java
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentDao studentDao;
+
+    @Transactional
+    public void changeInfo(){
+        studentDao.updateAgeById(100,1);
+        System.out.println("-----------");
+        int i = 1/0;
+        studentDao.updateNameById("test1",1);
+    }
+}
+```
+
+3.  测试事务效果  
+```java
+@SpringJUnitConfig(classes = DataSourceConfig.class)
+public class TxTest {
+
+    @Autowired
+    private StudentService studentService;
+
+    @Test
+    public void  testTx(){
+        studentService.changeInfo();
+    }
+}
+```
+
+### 6.2.3 事务属性 
+#### 6.2.3.1 只读
+
+1.  只读介绍
+> 对一个查询操作来说，如果我们把它设置成只读，就能够明确告诉数据库，这个操作不涉及写操作。这样数据库就能够针对查询操作来进行优化。 
+
+
+2.  设置方式 
+```java
+// readOnly = true把当前事务设置为只读 默认是false!
+@Transactional(readOnly = true)
+```
+
+3.  针对DML动作设置只读模式<br />会抛出下面异常：<br />Caused by: java.sql.SQLException: Connection is read-only. Queries leading to data modification are not allowed 
+
+4.  @Transactional注解放在类上 
+   1.  生效原则<br />	如果一个类中每一个方法上都使用了 [@Transactional ](/Transactional ) 注解，那么就可以将 [@Transactional ](/Transactional ) 注解提取到类上。反过来说：[@Transactional ](/Transactional ) 注解在类级别标记，会影响到类中的每一个方法。同时，类级别标记的 [@Transactional ](/Transactional ) 注解中设置的事务属性也会延续影响到方法执行时的事务属性。除非在方法上又设置了 [@Transactional ](/Transactional ) 注解。 <br />	对一个方法来说，离它最近的 [@Transactional ](/Transactional ) 注解中的事务属性设置生效。  
+   2.  用法举例<br />	在类级别@Transactional注解中设置只读，这样类中所有的查询方法都不需要设置@Transactional注解了。因为对查询操作来说，其他属性通常不需要设置，所以使用公共设置即可。<br />	然后在这个基础上，对增删改方法设置@Transactional注解 readOnly 属性为 false。 
+```java
+@Service
+@Transactional(readOnly = true)
+public class EmpService {
+    
+    // 为了便于核对数据库操作结果，不要修改同一条记录
+    @Transactional(readOnly = false)
+    public void updateTwice(……) {
+    ……
+    }
+    
+    // readOnly = true把当前事务设置为只读
+    // @Transactional(readOnly = true)
+    public String getEmpName(Integer empId) {
+    ……
+    }
+    
+}
+```
+
+#### 6.2.3.2 超时时间
+
+1.  需求<br />	事务在执行过程中，有可能因为遇到某些问题，导致程序卡住，从而长时间占用数据库资源。而长时间占用资源，大概率是因为程序运行出现了问题（可能是Java程序或MySQL数据库或网络连接等等）。<br />	此时这个很可能出问题的程序应该被回滚，撤销它已做的操作，事务结束，把资源让出来，让其他正常程序可以执行。概括来说就是一句话：超时回滚，释放资源。 
+
+2.  设置超时时间 
+```java
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentDao studentDao;
+
+    /**
+     * timeout设置事务超时时间,单位秒! 默认: -1 永不超时,不限制事务时间!
+     */
+    @Transactional(readOnly = false,timeout = 3)
+    public void changeInfo(){
+        studentDao.updateAgeById(100,1);
+        //休眠4秒,等待方法超时!
+        try {
+            Thread.sleep(4000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        studentDao.updateNameById("test1",1);
+    }
+}
+```
+
+3.  测试超时效果<br />执行抛出事务超时异常 
+```java
+org.springframework.transaction.TransactionTimedOutException: Transaction timed out: deadline was Wed May 24 09:10:43 IRKT 2023
+
+  at org.springframework.transaction.support.ResourceHolderSupport.checkTransactionTimeout(ResourceHolderSupport.java:155)
+  at org.springframework.transaction.support.ResourceHolderSupport.getTimeToLiveInMillis(ResourceHolderSupport.java:144)
+  at org.springframework.transaction.support.ResourceHolderSupport.getTimeToLiveInSeconds(ResourceHolderSupport.java:128)
+  at org.springframework.jdbc.datasource.DataSourceUtils.applyTimeout(DataSourceUtils.java:341)
+  at org.springframework.jdbc.core.JdbcTemplate.applyStatementSettings(JdbcTemplate.java:1467)
+```
+
+#### 6.3.2.3 事务异常
+
