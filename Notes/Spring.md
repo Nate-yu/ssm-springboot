@@ -2965,3 +2965,227 @@ org.springframework.transaction.TransactionTimedOutException: Transaction timed 
 
 #### 6.3.2.3 事务异常
 
+1.  默认情况<br />默认只针对运行时异常回滚，编译时异常不回滚。情景模拟代码如下： 
+```java
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentDao studentDao;
+
+    /**
+     * timeout设置事务超时时间,单位秒! 默认: -1 永不超时,不限制事务时间!
+     * rollbackFor = 指定哪些异常才会回滚,默认是 RuntimeException and Error 异常方可回滚!
+     * noRollbackFor = 指定哪些异常不会回滚, 默认没有指定,如果指定,应该在rollbackFor的范围内!
+     */
+    @Transactional(readOnly = false,timeout = 3)
+    public void changeInfo() throws FileNotFoundException {
+        studentDao.updateAgeById(100,1);
+        //主动抛出一个检查异常,测试! 发现不会回滚,因为不在rollbackFor的默认范围内! 
+        new FileInputStream("xxxx");
+        studentDao.updateNameById("test1",1);
+    }
+}
+```
+
+2.  设置回滚异常<br />rollbackFor属性：指定哪些异常类才会回滚,默认是 RuntimeException and Error 异常方可回滚! 
+```java
+/**
+ * timeout设置事务超时时间,单位秒! 默认: -1 永不超时,不限制事务时间!
+ * rollbackFor = 指定哪些异常才会回滚,默认是 RuntimeException and Error 异常方可回滚!
+ * noRollbackFor = 指定哪些异常不会回滚, 默认没有指定,如果指定,应该在rollbackFor的范围内!
+ */
+@Transactional(readOnly = false,timeout = 3,rollbackFor = Exception.class)
+public void changeInfo() throws FileNotFoundException {
+    studentDao.updateAgeById(100,1);
+    //主动抛出一个检查异常,测试! 发现不会回滚,因为不在rollbackFor的默认范围内! 
+    new FileInputStream("xxxx");
+    studentDao.updateNameById("test1",1);
+}
+```
+
+3.  设置不回滚的异常<br />在默认设置和已有设置的基础上，再指定一个异常类型，碰到它不回滚。<br />noRollbackFor属性：指定哪些异常不会回滚, 默认没有指定,如果指定,应该在rollbackFor的范围内! 
+```java
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentDao studentDao;
+
+    /**
+     * timeout设置事务超时时间,单位秒! 默认: -1 永不超时,不限制事务时间!
+     * rollbackFor = 指定哪些异常才会回滚,默认是 RuntimeException and Error 异常方可回滚!
+     * noRollbackFor = 指定哪些异常不会回滚, 默认没有指定,如果指定,应该在rollbackFor的范围内!
+     */
+    @Transactional(readOnly = false,timeout = 3,rollbackFor = Exception.class,noRollbackFor = FileNotFoundException.class)
+    public void changeInfo() throws FileNotFoundException {
+        studentDao.updateAgeById(100,1);
+        //主动抛出一个检查异常,测试! 发现不会回滚,因为不在rollbackFor的默认范围内!
+        new FileInputStream("xxxx");
+        studentDao.updateNameById("test1",1);
+    }
+}
+```
+
+#### 6.3.2.4 事务隔离级别
+
+1.  事务隔离级别<br />数据库事务的隔离级别是指在多个事务并发执行时，数据库系统为了保证数据一致性所遵循的规定。常见的隔离级别包括： 
+   1. 读未提交（Read Uncommitted）：事务可以读取未被提交的数据，容易产生脏读、不可重复读和幻读等问题。实现简单但不太安全，一般不用。
+   2. 读已提交（Read Committed）：事务只能读取已经提交的数据，可以避免脏读问题，但可能引发不可重复读和幻读。
+   3. 可重复读（Repeatable Read）：在一个事务中，相同的查询将返回相同的结果集，不管其他事务对数据做了什么修改。可以避免脏读和不可重复读，但仍有幻读的问题。
+   4. 串行化（Serializable）：最高的隔离级别，完全禁止了并发，只允许一个事务执行完毕之后才能执行另一个事务。可以避免以上所有问题，但效率较低，不适用于高并发场景。
+
+不同的隔离级别适用于不同的场景，需要根据实际业务需求进行选择和调整。 
+
+2.  事务隔离级别设置 
+```java
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentDao studentDao;
+
+    /**
+     * timeout设置事务超时时间,单位秒! 默认: -1 永不超时,不限制事务时间!
+     * rollbackFor = 指定哪些异常才会回滚,默认是 RuntimeException and Error 异常方可回滚!
+     * noRollbackFor = 指定哪些异常不会回滚, 默认没有指定,如果指定,应该在rollbackFor的范围内!
+     * isolation = 设置事务的隔离级别,mysql默认是repeatable read!
+     */
+    @Transactional(readOnly = false,
+                   timeout = 3,
+                   rollbackFor = Exception.class,
+                   noRollbackFor = FileNotFoundException.class,
+                   isolation = Isolation.REPEATABLE_READ)
+    public void changeInfo() throws FileNotFoundException {
+        studentDao.updateAgeById(100,1);
+        //主动抛出一个检查异常,测试! 发现不会回滚,因为不在rollbackFor的默认范围内!
+        new FileInputStream("xxxx");
+        studentDao.updateNameById("test1",1);
+    }
+}
+```
+
+#### 6.3.2.5 事务传播行为
+
+1.  事务传播行为要研究的问题
+
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694858060819-7cabbb23-fc30-4d95-923f-9042aa7d960c.png#averageHue=%23f4f4f4&clientId=u08e02bd3-d576-4&from=paste&id=uceac761a&originHeight=374&originWidth=571&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u560c0201-0bd7-418f-804e-0fe85ac1867&title=)<br />举例代码：
+```java
+@Service
+public class TopService {
+
+    @Autowired
+    private StudentService studentService;
+
+    @Transactional
+    public void  topService(){
+        studentService.changeAge();
+        studentService.changeName();
+    }
+}
+```
+在将要调用的Service中声明传播行为
+```java
+/**
+ * 声明两个独立修改数据库的事务业务方法
+ * REQUIRED: 父方法有事务就加入到父方法的事务中
+ * REQUIRES_NEW: 每次都新开启一个事务
+ */
+@Transactional(propagation = Propagation.REQUIRED)
+public void changeAge(){
+    studentDao.updateAgeById(998,1);
+}
+
+@Transactional(propagation = Propagation.REQUIRED)
+public void changeName(){
+    studentDao.updateNameById("yubin",1);
+    int i = 1/0;
+}
+```
+
+2.  propagation属性<br />[@Transactional ](/Transactional ) 注解通过 propagation 属性设置事务的传播行为。它的默认值是：  
+```java
+Propagation propagation() default Propagation.REQUIRED;
+```
+
+propagation 属性的可选值由 org.springframework.transaction.annotation.Propagation 枚举类提供：
+
+| 名称 | 含义 |
+| --- | --- |
+| REQUIRED  默认值 | 如果父方法有事务，就加入，如果没有就新建自己独立 |
+| REQUIRES_NEW | 不管父方法是否有事务，我都新建事务，都是独立的 |
+
+
+3. 测试
+   1. 声明两个业务方法
+```java
+@Transactional // 在类上加事务注解，类中所有方法都是事务
+@Service
+public class StudentService {
+    
+    @Autowired
+    private StudentDao studentDao;
+
+    /**
+     * 声明两个独立修改数据库的事务业务方法
+     * REQUIRED: 父方法有事务就加入到父方法的事务中
+     * REQUIRES_NEW: 每次都新开启一个事务
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void changeAge(){
+        studentDao.updateAgeById(998,1);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void changeName(){
+        studentDao.updateNameById("yubin",1);
+        int i = 1/0;
+    }
+}
+
+```
+
+   2.  声明一个整合业务方法
+```java
+@Service
+public class TopService {
+
+    @Autowired
+    private StudentService studentService;
+
+    @Transactional
+    public void  topService(){
+        studentService.changeAge();
+        studentService.changeName();
+    }
+}
+```
+
+   3. 添加传播行为测试
+```java
+@SpringJUnitConfig(JavaConfig.class)
+public class SpringTxTest {
+
+    @Autowired
+    private StudentService studentService;
+
+    @Autowired
+    private TopService topService;
+
+    @Test
+    public void test() {
+        topService.topService();
+    }
+}
+```
+**注意：**<br />在同一个类中，对于@Transactional注解的方法调用，事务传播行为不会生效。这是因为Spring框架中使用代理模式实现了事务机制，在同一个类中的方法调用并不经过代理，而是通过对象的方法调用，因此@Transactional注解的设置不会被代理捕获，也就不会产生任何事务传播行为的效果。
+
+# 7 Spring总结
+| 核心点 | 掌握目标 |
+| --- | --- |
+| spring框架理解 | spring家族和spring framework框架 |
+| spring核心功能 | ioc/di , aop , tx |
+| spring ioc / di | 组件管理、ioc容器、ioc/di , 三种配置方式 |
+| spring aop | aop和aop框架和代理技术、基于注解的aop配置 |
+| spring tx | 声明式和编程式事务、动态事务管理器、事务注解、属性 |
+
