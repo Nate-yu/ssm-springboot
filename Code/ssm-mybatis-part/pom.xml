@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>mybatis-base-quick-01</module>
+        <module>mybatis-base-param-input-02</module>
     </modules>
 
     <properties>

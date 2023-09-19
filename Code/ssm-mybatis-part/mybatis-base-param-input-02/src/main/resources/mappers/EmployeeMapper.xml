@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace为接口的全限定符 -->
+<mapper namespace="com.hut.mapper.EmployeeMapper">
+
+    <!--
+        #{key}: 占位符 + 赋值 emp_id = ?，再将 ? 赋值为id
+        ${key}: 字符串拼接  "emp_id = " + id
+    -->
+    <select id="queryById" resultType="com.hut.pojo.Employee">
+        select emp_id empId, emp_name empName, emp_salary empSalary
+            from t_emp where emp_id = #{id}
+    </select>
+</mapper>
