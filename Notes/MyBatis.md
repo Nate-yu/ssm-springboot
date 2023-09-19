@@ -229,3 +229,48 @@ public class MyBatisTest {
    - 代表Java程序和数据库之间的会话
 
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1694931597794-c081d8c5-e61f-4f2d-a503-53a04008941f.png#averageHue=%23f7f7f7&clientId=u4b04694d-9222-4&from=paste&height=297&id=ufd724c7c&originHeight=446&originWidth=1001&originalType=binary&ratio=1.5&rotation=0&showTitle=false&size=62696&status=done&style=none&taskId=u963340c1-daa2-457c-9714-11384ea6d00&title=&width=667.3333333333334)
+
+# 2 MyBatis 基本使用
+## 2.1 向SQL语句传参
+### 2.1.1 MyBatis 日志输出配置
+mybatis配置文件设计标签和顶层结构如下：
+
+- configuration（配置） 
+   - [properties（属性）](https://mybatis.org/mybatis-3/zh/configuration.html#properties)
+   - [settings（设置）](https://mybatis.org/mybatis-3/zh/configuration.html#settings)
+   - [typeAliases（类型别名）](https://mybatis.org/mybatis-3/zh/configuration.html#typeAliases)
+   - [typeHandlers（类型处理器）](https://mybatis.org/mybatis-3/zh/configuration.html#typeHandlers)
+   - [objectFactory（对象工厂）](https://mybatis.org/mybatis-3/zh/configuration.html#objectFactory)
+   - [plugins（插件）](https://mybatis.org/mybatis-3/zh/configuration.html#plugins)
+   - [environments（环境配置）](https://mybatis.org/mybatis-3/zh/configuration.html#environments) 
+      - environment（环境变量） 
+         - transactionManager（事务管理器）
+         - dataSource（数据源）
+   - [databaseIdProvider（数据库厂商标识）](https://mybatis.org/mybatis-3/zh/configuration.html#databaseIdProvider)
+   - [mappers（映射器）](https://mybatis.org/mybatis-3/zh/configuration.html#mappers)
+
+我们可以在mybatis的配置文件使用**settings标签**设置，输出运行过程SQL日志<br />通过查看日志，我们可以判定#{} 和 ${}的输出效果<br />settings设置项：
+
+|  logImpl   |  指定 MyBatis 所用日志的具体实现，未指定时将自动查找。   |  J2 &#124; JDK_LOGGING &#124; COMMONS_LOGGING &#124; STDOUT_LOGGING &#124; NO_LOGGING   |
+| --- | --- | --- |
+
+日志配置
+```xml
+<settings>
+    <!-- 开启mybatis的日志输出，选择system进行控制台输出 -->
+    <setting name="logImpl" value="STDOUT_LOGGING"/>
+</settings>
+```
+
+### 2.1.2 #{ key } 形式
+ MyBatis会将SQL语句中的`#{}`转换为问号占位符<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1695090813421-1ad44512-83a7-4b01-9de5-152bfce0392a.png#averageHue=%23222428&clientId=u93ee01d8-773d-4&from=paste&height=193&id=u1c25a689&originHeight=289&originWidth=1614&originalType=binary&ratio=1.5&rotation=0&showTitle=false&size=52295&status=done&style=none&taskId=u2abbecac-2c22-438c-9a11-750dc61b278&title=&width=1076)
+
+### 2.1.3 ${ key } 形式
+`${}`形式传参，底层Mybatis做的是字符串拼接操作。<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1695091036797-e155d469-b1ff-4d53-9084-3fffb2709acc.png#averageHue=%23222428&clientId=u93ee01d8-773d-4&from=paste&height=192&id=uec2b5df2&originHeight=288&originWidth=1486&originalType=binary&ratio=1.5&rotation=0&showTitle=false&size=49719&status=done&style=none&taskId=ufbf4032d-60b1-4142-87f8-54d713ce79d&title=&width=990.6666666666666)<br />通常不会采用`${}`的方式传值。一个特定的适用场景是：通过Java程序动态生成数据库表，表名部分需要Java程序通过参数传入；而JDBC对于表名部分是不能使用问号占位符的，此时只能使用`${}`<br />结论：实际开发中，能用`#{}`实现的，肯定不用`${}`。<br />特殊情况： 动态的不是值，是列名或者关键字，需要使用`${}`拼接
+```java
+//注解方式传入参数！！
+@Select("select * from user where ${column} = #{value}")
+User findByColumn(@Param("column") String column, 
+                                @Param("value") String value);
+```
+
