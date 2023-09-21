@@ -13,4 +13,40 @@
         select emp_id empId, emp_name empName, emp_salary empSalary
             from t_emp where emp_id = #{id}
     </select>
+
+    <!--
+        1. 传入的单个简单类型 key随便写
+    -->
+    <delete id="deleteById">
+        delete from t_emp where emp_id = #{id}
+    </delete>
+
+    <select id="queryBySalary" resultType="com.hut.pojo.Employee">
+        select emp_id empId, emp_name empName, emp_salary empSalary
+            from t_emp where emp_salary = #{salary}
+    </select>
+
+    <!--
+        2. 传入实体对象 key = 属性名
+    -->
+    <insert id="insertEmp">
+        insert into t_emp (emp_name, emp_salary) values (#{empName}, #{empSalary});
+    </insert>
+
+    <!--
+        3. 传入多个简单类型数据 key
+         a. key = @Param("value")
+         b. arg0 arg1，参数从左到右依次
+    -->
+    <select id="queryByNameAndSalary" resultType="com.hut.pojo.Employee">
+        select emp_id empId, emp_name empName, emp_salary empSalary
+            from t_emp where emp_name = #{name} and emp_salary = #{salary}
+    </select>
+
+    <!--
+        4. 传入Map类型的数据 key = map的key
+    -->
+    <insert id="insertEmpMap">
+        insert into t_emp (emp_name, emp_salary) values (#{name}, #{salary});
+    </insert>
 </mapper>
