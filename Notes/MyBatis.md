@@ -274,3 +274,173 @@ User findByColumn(@Param("column") String column,
                                 @Param("value") String value);
 ```
 
+## 2.2 数据输入
+### 2.2.1 MyBatis总体机制概括
+![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1695283705773-04ee2181-b794-4996-bc96-915c56e119fe.png#averageHue=%23000000&clientId=u9a16ea63-f739-4&from=paste&height=256&id=u8d58135d&originHeight=341&originWidth=1208&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ub614452a-b639-4497-8fe5-aac283594ed&title=&width=906)
+
+### 2.2.2 概念说明
+这里数据输入具体是指上层方法（例如Service方法）调用Mapper接口时，数据传入的形式。
+
+- 简单类型：只包含一个值的数据类型 
+   - 基本数据类型：int、byte、short、double、……
+   - 基本数据类型的包装类型：Integer、Character、Double、……
+   - 字符串类型：String
+- 复杂类型：包含多个值的数据类型 
+   - 实体类类型：Employee、Department、……
+   - 集合类型：List、Set、Map、……
+   - 数组类型：int[]、String[]、……
+   - 复合类型：List、实体类中包含集合……
+
+### 2.2.3 单个简单类型参数
+Mapper 接口中抽象方法的声明
+```java
+// 根据id删除员工信息
+int deleteById(Integer id);
+
+// 根据工资查询员工信息
+List<Employee> queryBySalary(Double salary);
+```
+
+SQL语句
+```xml
+<!--
+    1. 传入的单个简单类型 key随便写
+-->
+<delete id="deleteById">
+    delete from t_emp where emp_id = #{id}
+</delete>
+
+<select id="queryBySalary" resultType="com.hut.pojo.Employee">
+    select emp_id empId, emp_name empName, emp_salary empSalary
+        from t_emp where emp_salary = #{salary}
+</select>
+```
+
+ 单个简单类型参数，在`#{}`中可以随意命名，但是没有必要。通常还是使用和接口方法参数同名。
+
+### 2.2.4 实体类型参数
+Mapper接口中抽象方法的声明  
+```java
+// 插入员工数据【实体对象】
+int insertEmp(Employee employee);
+```
+
+SQL语句
+```xml
+<!--
+    2. 传入实体对象 key = 属性名
+-->
+<insert id="insertEmp">
+    insert into t_emp (emp_name, emp_salary) values (#{empName}, #{empSalary});
+</insert>
+```
+
+对应关系如下：<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1695284163334-6ec0b09b-ee1f-4207-93f0-a242395dd7f6.png#averageHue=%23000000&clientId=u9a16ea63-f739-4&from=paste&height=469&id=u17406c84&originHeight=625&originWidth=1240&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ued2d6792-e7c0-44a9-8481-43d3067d9a0&title=&width=930)<br />结论：Mybatis会根据`#{}`中传入的数据，加工成`getXxx()`方法，通过反射在实体类对象中调用这个方法，从而获取到对应的数据。填充到#{}解析后的问号占位符这个位置。
+
+### 2.2.5 零散的简单类型数据
+ 零散的多个简单类型参数，如果没有特殊处理，那么Mybatis无法识别自定义名称：  <br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1695284362007-9e783991-6c8f-40a8-a40d-36a2a82b66b1.png#averageHue=%23ede0cb&clientId=u9a16ea63-f739-4&from=paste&id=u56909c50&originHeight=233&originWidth=696&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u9b495564-1ce8-4da3-bfa1-e0b39c9f9b5&title=)
+
+Mapper接口中抽象方法的声明 
+```java
+// 根据员工姓名和工资查询员工信息
+List<Employee> queryByNameAndSalary(@Param("name") String name, @Param("salary") Double salary);
+```
+
+SQL语句
+```xml
+<!--
+  3. 传入多个简单类型数据 key
+   a. key = @Param("value")
+   b. arg0 arg1，参数从左到右依次
+-->
+<select id="queryByNameAndSalary" resultType="com.hut.pojo.Employee">
+  select emp_id empId, emp_name empName, emp_salary empSalary
+      from t_emp where emp_name = #{name} and emp_salary = #{salary}
+</select>
+```
+
+对应关系如下：<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1695284433459-fd0c187f-4b20-471d-aa56-b4215bcc8bcd.png#averageHue=%23000000&clientId=u9a16ea63-f739-4&from=paste&height=236&id=uea9b052c&originHeight=315&originWidth=1430&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ub61de3f1-c8bd-45eb-90fc-8e857eed720&title=&width=1073)
+
+### 2.2.6 Map类型参数
+Mapper接口中抽象方法的声明 
+```java
+// 插入员工数据【map(name, salary)】
+// 注意：mapper接口中不允许重载
+int insertEmpMap(Map data);
+```
+
+SQL语句
+```xml
+<!--
+    4. 传入Map类型的数据 key = map的key
+-->
+<insert id="insertEmpMap">
+    insert into t_emp (emp_name, emp_salary) values (#{name}, #{salary});
+</insert>
+```
+
+### 2.2.7 方法测试
+```java
+public class InputParamTest {
+
+    private SqlSession session;
+
+    private EmployeeMapper mapper;
+
+    // junit5会在每一个@Test方法前执行@BeforeEach方法
+    @BeforeEach
+    public void init() throws IOException {
+        session = new SqlSessionFactoryBuilder().build(Resources.getResourceAsStream("mybatis-config.xml")).openSession();
+        mapper = session.getMapper(EmployeeMapper.class);
+    }
+
+    @Test
+    public void testDeleteById() {
+        int row = mapper.deleteById(1);
+        if (row == 1) {
+            System.out.println("删除成功！");
+        }
+    }
+
+    @Test
+    public void testQueryBySalary() {
+        List<Employee> employees = mapper.queryBySalary(777.77);
+        System.out.println("employees = " + employees);
+    }
+
+    @Test
+    public void testInsertEmp() {
+        Employee employee = new Employee();
+        employee.setEmpSalary(888.88);
+        employee.setEmpName("余鸿翔");
+        int row = mapper.insertEmp(employee);
+        if (row == 1) {
+            System.out.println("插入成功！");
+        }
+    }
+
+    @Test
+    public void testQueryByNameAndSalary() {
+        List<Employee> employees = mapper.queryByNameAndSalary("余鸿翔", 888.88);
+        System.out.println("employees = " + employees);
+    }
+
+    @Test
+    public void testInsertEmpMap() {
+        HashMap<String, Object> paramMap = new HashMap<>();
+        paramMap.put("salary", 999.99);
+        paramMap.put("name","Nate");
+        int row = mapper.insertEmpMap(paramMap);
+        if (row == 1) {
+            System.out.println("插入成功！");
+        }
+    }
+
+    // junit5会在每一个@Test方法后执行@@AfterEach方法
+    @AfterEach
+    public void clear() {
+        session.commit();
+        session.close();
+    }
+}
+```
