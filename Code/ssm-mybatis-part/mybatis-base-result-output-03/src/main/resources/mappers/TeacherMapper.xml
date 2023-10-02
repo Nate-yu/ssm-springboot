@@ -22,7 +22,7 @@
         <id 主键映射关系
         <result 普通映射关系
     -->
-    <resultMap id="tMpa" type="teacher">
+    <resultMap id="tMap" type="teacher">
         <id property="tId" column="t_id"/>
         <result property="tName" column="t_name"/>
     </resultMap>
