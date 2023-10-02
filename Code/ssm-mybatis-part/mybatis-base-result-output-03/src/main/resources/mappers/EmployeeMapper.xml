@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace为接口的全限定符 -->
+<mapper namespace="com.hut.mapper.EmployeeMapper">
+
+    <!--DML-->
+    <delete id="deleteEmployeeById">
+        delete from t_emp where emp_id = #{id}
+    </delete>
+
+    <!--
+        1. 返回单个简单类型
+            resultType语法：
+                类的全限定符
+                别名简称
+    -->
+    <select id="queryNameById" resultType="string">
+        select emp_name from t_emp where emp_id = #{id}
+    </select>
+
+    <select id="querySalaryById" resultType="double">
+        select emp_salary from t_emp where emp_id = #{id}
+    </select>
+
+    <!--
+        2. 返回单个自定义实体类型
+    -->
+    <select id="queryById" resultType="employee">
+        select * from t_emp where emp_id = #{id}
+    </select>
+
+    <!--
+        3. 返回map(没有实体类可以接值)
+    -->
+    <select id="selectEmpNameAndMaxSalary" resultType="map">
+        SELECT
+            emp_name 员工姓名,
+            emp_salary 员工工资,
+            (SELECT AVG(emp_salary) FROM t_emp) 部门平均工资
+            FROM t_emp WHERE emp_salary=(
+            SELECT MAX(emp_salary) FROM t_emp
+            )
+    </select>
+
+    <!--
+        4. 返回集合类型
+            resultType需要指定泛型而不是集合类型
+    -->
+    <select id="queryNamesBySalary" resultType="string">
+        select emp_name from t_emp where emp_salary > #{salary}
+    </select>
+
+    <select id="queryAll" resultType="employee">
+        select * from t_emp
+    </select>
+
+    <!--
+        5. 主键回显，获取插入数据的主键
+            1. 自增长主键回显
+                useGeneratedKeys="true": 表示想要数据库自动增长的主键值
+                keyColumn: 指定主键字段名
+                keyProperty: 接收主键列值的属性
+            2. 非自增长主键回显
+    -->
+    <insert id="insertEmp" useGeneratedKeys="true" keyColumn="emp_id" keyProperty="empId">
+        insert into t_emp(emp_name,emp_salary)
+            values(#{empName},#{empSalary})
+    </insert>
+</mapper>

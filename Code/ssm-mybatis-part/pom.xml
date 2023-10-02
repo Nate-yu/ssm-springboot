@@ -11,6 +11,7 @@
     <modules>
         <module>mybatis-base-quick-01</module>
         <module>mybatis-base-param-input-02</module>
+        <module>mybatis-base-result-output-03</module>
     </modules>
 
     <properties>

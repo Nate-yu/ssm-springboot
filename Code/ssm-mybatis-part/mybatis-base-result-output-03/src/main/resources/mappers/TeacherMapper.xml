@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace为接口的全限定符 -->
+<mapper namespace="com.hut.mapper.TeacherMapper">
+    <insert id="insertTeacher">
+        <!-- 插入之前，先执行一段sql语句，生成一个主键值
+            order="BEFORE" 表示在插入之前执行
+            order="AFTER" 表示在插入之后执行
+            resultType="int" 表示返回值类型
+            keyProperty="tId" 表示返回值赋值给tId
+        -->
+        <selectKey keyProperty="tId" resultType="string" order="BEFORE">
+            select replace(uuid(),'-','')
+        </selectKey>
+        insert into teacher(t_id, t_name)
+        value(#{tId}, #{tName})
+    </insert>
+
+    <!--开启自定义映射
+        <id 主键映射关系
+        <result 普通映射关系
+    -->
+    <resultMap id="tMpa" type="teacher">
+        <id property="tId" column="t_id"/>
+        <result property="tName" column="t_name"/>
+    </resultMap>
+    <select id="selectTeacher" resultMap="tMap">
+        select * from teacher where t_id = #{tId}
+    </select>
+
+</mapper>
