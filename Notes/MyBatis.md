@@ -444,3 +444,324 @@ public class InputParamTest {
     }
 }
 ```
+
+## 2.3 数据输出
+### 2.3.1 输出概述
+数据输出总体上有两种形式：
+
+- 增删改操作返回的受影响行数：直接使用 int 或 long 类型接收即可
+- 查询操作的查询结果
+
+### 2.3.2 单个简单类型
+Mapper接口中的抽象方法
+```java
+// 根据员工id查询员工姓名
+String queryNameById(Integer id);
+
+// 根据员工id查询员工工资
+Double querySalaryById(Integer id);
+```
+
+SQL语句
+```xml
+<!--
+    1. 返回单个简单类型
+        resultType语法：
+            类的全限定符
+            别名简称
+-->
+<select id="queryNameById" resultType="string">
+    select emp_name from t_emp where emp_id = #{id}
+</select>
+
+<select id="querySalaryById" resultType="double">
+    select emp_salary from t_emp where emp_id = #{id}
+</select>
+```
+
+单元测试
+```java
+@Test
+public void testQueryNameById() {
+    String name = mapper.queryNameById(2);
+    System.out.println("name = " + name);
+}
+
+@Test
+public void testQuerySalaryById() {
+    Double salary = mapper.querySalaryById(3);
+    System.out.println("salary = " + salary);
+}
+```
+Mybatis 内部给常用的数据类型设定了很多别名。 以 int 类型为例，可以写的名称有：int、integer、Integer、java.lang.Integer、Int、INT、INTEGER 等等<br /> select标签，通过resultType指定查询返回值类型 。resultType = "全限定符 ｜ 别名 ｜ 如果是返回集合类型，写范型类型即可"
+
+别名问题：[https://mybatis.org/mybatis-3/zh/configuration.html#typeAliases](https://mybatis.org/mybatis-3/zh/configuration.html#typeAliases)<br />类型别名可为 Java 类型设置一个缩写名字。 它仅用于 XML 配置，意在降低冗余的全限定类名书写。例如：
+```xml
+<typeAliases>
+  <typeAlias alias="Author" type="domain.blog.Author"/>
+  <typeAlias alias="Blog" type="domain.blog.Blog"/>
+</typeAliases>
+```
+当这样配置时，`Blog` 可以用在任何使用 `domain.blog.Blog` 的地方。
+
+也可以指定一个包名，MyBatis 会在包名下面搜索需要的 Java Bean，比如：
+```xml
+<typeAliases> <package name="domain.blog"/> </typeAliases>
+```
+每一个在包 `domain.blog` 中的 Java Bean，在没有注解的情况下，会使用 Bean 的首字母小写的非限定类名来作为它的别名。 比如 `domain.blog.Author` 的别名为 `author`；若有注解，则别名为其注解值。见下面的例子：
+```java
+@Alias("author")
+public class Author {
+    ...
+}
+```
+
+下面是Mybatis为常见的 Java 类型内建的类型别名。它们都是不区分大小写的，注意，为了应对原始类型的命名重复，采取了特殊的命名风格。  
+
+| 别名 | 映射的类型 |
+| --- | --- |
+| _byte | byte |
+| _char (since 3.5.10) | char |
+| _character (since 3.5.10) | char |
+| _long | long |
+| _short | short |
+| _int | int |
+| _integer | int |
+| _double | double |
+| _float | float |
+| _boolean | boolean |
+| string | String |
+| byte | Byte |
+| char (since 3.5.10) | Character |
+| character (since 3.5.10) | Character |
+| long | Long |
+| short | Short |
+| int | Integer |
+| integer | Integer |
+| double | Double |
+| float | Float |
+| boolean | Boolean |
+| date | Date |
+| decimal | BigDecimal |
+| bigdecimal | BigDecimal |
+| biginteger | BigInteger |
+| object | Object |
+| object[] | Object[] |
+| map | Map |
+| hashmap | HashMap |
+| list | List |
+| arraylist | ArrayList |
+| collection | Collection |
+
+
+### 2.3.3 返回实体类对象
+Mapper接口的抽象方法
+```java
+// 返回单个自定义实体类型
+Employee queryById(Integer id);
+```
+
+SQL语句
+```xml
+<!--
+    2. 返回单个自定义实体类型
+-->
+<select id="queryById" resultType="employee">
+    select * from t_emp where emp_id = #{id}
+</select>
+```
+
+ 在 Mybatis 全局配置文件中，做了下面的配置，select语句中可以不给字段设置别名，开启驼峰式自动映射（mybatis-config.xml）
+```xml
+<settings>
+
+  <!-- 开启驼峰式自动映射 -->
+  <setting name="mapUnderscoreToCamelCase" value="true"/>
+
+</settings>
+```
+
+单元测试
+```java
+@Test
+public void testQueryById() {
+    Employee employee = mapper.queryById(5);
+    System.out.println("employee = " + employee);
+}
+```
+
+### 2.3.4 返回Map类型
+适用于SQL查询返回的各个字段综合起来并不和任何一个现有的实体类对应，没法封装到实体类对象中。能够封装成实体类类型的，就不使用Map类型。<br />Mapper接口的抽象方法
+```java
+// 查询部门的最高工资与平均工资
+Map<String,Object> selectEmpNameAndMaxSalary();
+```
+
+SQL语句
+```xml
+<!--
+    3. 返回map(没有实体类可以接值)
+-->
+<select id="selectEmpNameAndMaxSalary" resultType="map">
+    SELECT
+        emp_name 员工姓名,
+        emp_salary 员工工资,
+        (SELECT AVG(emp_salary) FROM t_emp) 部门平均工资
+        FROM t_emp WHERE emp_salary=(
+        SELECT MAX(emp_salary) FROM t_emp
+        )
+</select>
+```
+
+单元测试
+```java
+@Test
+public void testSelectEmpNameAndMaxSalary() {
+    Map<String, Object> empMap = mapper.selectEmpNameAndMaxSalary();
+    /*Set<Map.Entry<String, Object>> entrySet = empMap.entrySet();
+    for (Map.Entry<String, Object> entry : entrySet) {
+        String key = entry.getKey();
+        Object value = entry.getValue();
+        System.out.println("value = " + value);
+    }*/
+    System.out.println("empMap = " + empMap);
+}
+```
+
+### 2.3.5 返回List类型
+查询结果返回多个实体类对象，希望把多个实体类对象放在List集合中返回。此时不需要任何特殊处理，在resultType属性中还是设置实体类类型即可。
+
+Mapper接口中抽象方法
+```java
+// 查询工资高于传入值的员工们的姓名
+List<String> queryNamesBySalary(Double salary);
+
+// 查询全部员工信息
+List<Employee> queryAll();
+```
+
+SQL语句
+```xml
+<!--
+  4. 返回集合类型
+  	resultType需要指定泛型而不是集合类型
+-->
+<select id="queryNamesBySalary" resultType="string">
+  select emp_name from t_emp where emp_salary > #{salary}
+</select>
+
+<select id="queryAll" resultType="employee">
+  select * from t_emp
+</select>
+```
+
+单元测试
+```java
+@Test
+public void testQueryNamesBySalary() {
+    List<String> names = mapper.queryNamesBySalary(888.0);
+    System.out.println("names = " + names);
+}
+
+@Test
+public void testQueryAll() {
+    List<Employee> employees = mapper.queryAll();
+    System.out.println("employees = " + employees);
+}
+```
+
+### 2.3.6 返回主键值
+
+1. 自增长类型主键
+
+Mapper接口中的抽象方法
+```java
+// 插入员工
+int insertEmp(Employee employee);
+```
+
+SQL语句
+```xml
+<!--
+    5. 主键回显，获取插入数据的主键
+        1. 自增长主键回显
+            useGeneratedKeys="true": 表示想要数据库自动增长的主键值
+            keyColumn: 指定主键字段名
+            keyProperty: 接收主键列值的属性
+        2. 非自增长主键回显
+-->
+<insert id="insertEmp" useGeneratedKeys="true" keyColumn="emp_id" keyProperty="empId">
+    insert into t_emp(emp_name,emp_salary)
+        values(#{empName},#{empSalary})
+</insert>
+```
+
+单元测试
+```java
+@Test
+public void test_01() throws IOException {
+    // 1. 读取外部配置文件（mybatis-config.xml）
+    InputStream ips = Resources.getResourceAsStream("mybatis-config.xml");
+    
+    // 2. 创建sqlSessionFactory
+    SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(ips);
+    
+    // 3. 根据sqlSessionFactory创建sqlSession（每次业务创建一个，用完就释放）
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    
+    // 4. 获取代理对象
+    EmployeeMapper mapper = sqlSession.getMapper(EmployeeMapper.class);
+    
+    Employee employee = new Employee();
+    employee.setEmpName("abin");
+    employee.setEmpSalary(1000.0);
+    
+    int rows = mapper.insertEmp(employee);
+    System.out.println(employee.getEmpId());
+    System.out.println("rows = " + rows);
+    
+    // 5. 释放资源 和 提交事务
+    sqlSession.commit();
+    sqlSession.close();
+}
+```
+注意：Mybatis是将自增主键的值设置到实体类对象中，而不是以Mapper接口方法返回值的形式返回。
+
+2. 非自增长类型主键
+
+而对于不支持自增型主键的数据库（例如 Oracle）或者字符串类型主键，则可以使用`selectKey`子元素：selectKey 元素将会首先运行，id 会被设置，然后插入语句会被调用。使用 selectKey 帮助插入UUID作为字符串类型主键示例：
+```xml
+<insert id="insertTeacher">
+    <!-- 插入之前，先执行一段sql语句，生成一个主键值
+        order="BEFORE" 表示在插入之前执行
+        order="AFTER" 表示在插入之后执行
+        resultType="int" 表示返回值类型
+        keyProperty="tId" 表示返回值赋值给tId
+    -->
+    <selectKey keyProperty="tId" resultType="string" order="BEFORE">
+        select replace(uuid(),'-','')
+    </selectKey>
+    insert into teacher(t_id, t_name)
+    value(#{tId}, #{tName})
+</insert>
+```
+在上例中，我们定义了一个 `insertTeacher`的插入语句来将 `Teacher`对象插入到 `teacher`表中。我们使用 `selectKey`来查询 UUID 并设置到 `tId`字段中。<br />通过 `keyProperty`属性来指定查询到的 UUID 赋值给对象中的`tId`属性，而 `resultType`属性指定了 UUID 的类型为 `java.lang.String`。<br />需要注意的是，我们将`selectKey`放在了插入语句的前面，这是因为 MySQL 在 `insert`语句中只支持一个 `select`子句，而 `selectKey`中查询 UUID 的语句就是一个 `select`子句，因此我们需要将其放在前面。<br />最后，在将`Teacher`对象插入到`teacher`表中时，我们直接使用对象中的`tId`属性来插入主键值。<br />使用这种方式，我们可以方便地插入 UUID 作为字符串类型主键。当然，还有其他插入方式可以使用，如使用Java代码生成UUID并在类中显式设置值等。需要根据具体应用场景和需求选择合适的插入方式。
+
+单元测试
+
+
+### 2.3.7 实体类属性和数据库字段对应关系
+使用resultMap<br />使用resultMap标签定义对应关系，再在后面的SQL语句中引用这个对应关系 
+```xml
+<!--开启自定义映射
+  <id 主键映射关系
+  <result 普通映射关系
+-->
+<resultMap id="tMpa" type="teacher">
+  <id property="tId" column="t_id"/>
+  <result property="tName" column="t_name"/>
+</resultMap>
+<select id="selectTeacher" resultMap="tMap">
+  select * from teacher where t_id = #{tId}
+</select>
+```
