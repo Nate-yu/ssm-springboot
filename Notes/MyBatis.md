@@ -747,9 +747,6 @@ public void test_01() throws IOException {
 ```
 在上例中，我们定义了一个 `insertTeacher`的插入语句来将 `Teacher`对象插入到 `teacher`表中。我们使用 `selectKey`来查询 UUID 并设置到 `tId`字段中。<br />通过 `keyProperty`属性来指定查询到的 UUID 赋值给对象中的`tId`属性，而 `resultType`属性指定了 UUID 的类型为 `java.lang.String`。<br />需要注意的是，我们将`selectKey`放在了插入语句的前面，这是因为 MySQL 在 `insert`语句中只支持一个 `select`子句，而 `selectKey`中查询 UUID 的语句就是一个 `select`子句，因此我们需要将其放在前面。<br />最后，在将`Teacher`对象插入到`teacher`表中时，我们直接使用对象中的`tId`属性来插入主键值。<br />使用这种方式，我们可以方便地插入 UUID 作为字符串类型主键。当然，还有其他插入方式可以使用，如使用Java代码生成UUID并在类中显式设置值等。需要根据具体应用场景和需求选择合适的插入方式。
 
-单元测试
-
-
 ### 2.3.7 实体类属性和数据库字段对应关系
 使用resultMap<br />使用resultMap标签定义对应关系，再在后面的SQL语句中引用这个对应关系 
 ```xml
@@ -765,3 +762,68 @@ public void test_01() throws IOException {
   select * from teacher where t_id = #{tId}
 </select>
 ```
+
+## 2.4 mapperXML标签总结
+SQL 映射文件只有很少的几个顶级元素（按照应被定义的顺序列出）：
+
+- `insert` – 映射插入语句。
+- `update` – 映射更新语句。
+- `delete` – 映射删除语句。
+- `select` – 映射查询语句。
+
+**select标签：**<br />MyBatis 在查询和结果映射做了相当多的改进。一个简单查询的 select 元素是非常简单：
+```xml
+<select id="selectPerson" resultType="hashmap" resultMap="自定义结构"> 
+  SELECT * FROM PERSON WHERE ID = #{id} 
+</select>
+```
+这个语句名为 selectPerson，接受一个 int（或 Integer）类型的参数，并返回一个 HashMap 类型的对象，其中的键是列名，值便是结果行中的对应值。<br />注意参数符号：#{id}  ${key}
+
+MyBatis 创建一个预处理语句（PreparedStatement）参数，在 JDBC 中，这样的一个参数在 SQL 中会由一个“?”来标识，并被传递到一个新的预处理语句中，就像这样：
+```java
+// 近似的 JDBC 代码，非 MyBatis 代码...
+String selectPerson = "SELECT * FROM PERSON WHERE ID=?";
+PreparedStatement ps = conn.prepareStatement(selectPerson);
+ps.setInt(1,id);
+```
+
+select 元素允许你配置很多属性来配置每条语句的行为细节：
+
+| 属性 | 描述 |
+| --- | --- |
+| `id` | 在命名空间中唯一的标识符，可以被用来引用这条语句。 |
+| `resultType` | 期望从这条语句中返回结果的类全限定名或别名。 注意，如果返回的是集合，那应该设置为集合包含的类型，而不是集合本身的类型。 resultType 和 resultMap 之间只能同时使用一个。 |
+| `resultMap` | 对外部 resultMap 的命名引用。结果映射是 MyBatis 最强大的特性，如果你对其理解透彻，许多复杂的映射问题都能迎刃而解。 resultType 和 resultMap 之间只能同时使用一个。 |
+| `timeout` | 这个设置是在抛出异常之前，驱动程序等待数据库返回请求结果的秒数。默认值为未设置（unset）（依赖数据库驱动）。 |
+| `statementType` | 可选 STATEMENT，PREPARED 或 CALLABLE。这会让 MyBatis 分别使用 Statement，PreparedStatement 或 CallableStatement，默认值：PREPARED。 |
+
+
+**insert, update 和 delete标签：**<br />数据变更语句 insert，update 和 delete 的实现非常接近：
+```xml
+<insert
+  id="insertAuthor"
+  statementType="PREPARED"
+  keyProperty=""
+  keyColumn=""
+  useGeneratedKeys=""
+  timeout="20">
+
+<update
+  id="updateAuthor"
+  statementType="PREPARED"
+  timeout="20">
+
+<delete
+  id="deleteAuthor"
+  statementType="PREPARED"
+  timeout="20">
+```
+| 属性 | 描述 |
+| --- | --- |
+| `id` | 在命名空间中唯一的标识符，可以被用来引用这条语句。 |
+| `timeout` | 这个设置是在抛出异常之前，驱动程序等待数据库返回请求结果的秒数。默认值为未设置（unset）（依赖数据库驱动）。 |
+| `statementType` | 可选 STATEMENT，PREPARED 或 CALLABLE。这会让 MyBatis 分别使用 Statement，PreparedStatement 或 CallableStatement，默认值：PREPARED。 |
+| `useGeneratedKeys` | （仅适用于 insert 和 update）这会令 MyBatis 使用 JDBC 的 getGeneratedKeys 方法来取出由数据库内部生成的主键（比如：像 MySQL 和 SQL Server 这样的关系型数据库管理系统的自动递增字段），默认值：false。 |
+| `keyProperty` | （仅适用于 insert 和 update）指定能够唯一识别对象的属性，MyBatis 会使用 getGeneratedKeys 的返回值或 insert 语句的 selectKey 子元素设置它的值，默认值：未设置（`unset`<br />）。如果生成列不止一个，可以用逗号分隔多个属性名称。 |
+| `keyColumn` | （仅适用于 insert 和 update）设置生成键值在表中的列名，在某些数据库（像 PostgreSQL）中，当主键列不是表中的第一列的时候，是必须设置的。如果生成列不止一个，可以用逗号分隔多个属性名称。 |
+
