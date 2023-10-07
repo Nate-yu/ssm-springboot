@@ -827,3 +827,293 @@ select 元素允许你配置很多属性来配置每条语句的行为细节：
 | `keyProperty` | （仅适用于 insert 和 update）指定能够唯一识别对象的属性，MyBatis 会使用 getGeneratedKeys 的返回值或 insert 语句的 selectKey 子元素设置它的值，默认值：未设置（`unset`<br />）。如果生成列不止一个，可以用逗号分隔多个属性名称。 |
 | `keyColumn` | （仅适用于 insert 和 update）设置生成键值在表中的列名，在某些数据库（像 PostgreSQL）中，当主键列不是表中的第一列的时候，是必须设置的。如果生成列不止一个，可以用逗号分隔多个属性名称。 |
 
+
+# 3 MyBatis 多表映射
+## 3.1 多表映射概念
+学习目标：
+
+- 多表查询语句使用
+- 多表结果承接实体类设计
+- 使用ResultMap完成多表结果映射
+
+**实体类设计方案**<br />多表关系回顾：（双向查看）
+
+-  一对一<br />夫妻关系，人和身份证号 
+-  一对多| 多对一<br />用户和用户的订单，锁和钥匙 
+-  多对多<br />老师和学生，部门和员工 
+
+实体类设计关系(查询)：（单向查看）
+
+-  对一 ： 夫妻一方对应另一方，订单对应用户都是对一关系<br />实体类设计：对一关系下，类中只要包含单个对方对象类型属性即可<br />例如： 
+```java
+public class Customer {
+
+  private Integer customerId;
+  private String customerName;
+
+}
+
+public class Order {
+
+  private Integer orderId;
+  private String orderName;
+  private Customer customer;// 体现的是对一的关系
+
+}
+```
+
+-  对多：用户对应的订单，讲师对应的学生或者学生对应的讲师都是对多关系：<br />实体类设计：对多关系下，类中只要包含对方类型集合属性即可
+```java
+public class Customer {
+
+  private Integer customerId;
+  private String customerName;
+  private List<Order> orderList;// 体现的是对多的关系
+}
+
+public class Order {
+
+  private Integer orderId;
+  private String orderName;
+  private Customer customer;// 体现的是对一的关系
+  
+}
+```
+
+多表结果实体类设计小技巧：<br />对一，属性中包含对方对象<br />对多，属性中包含对方对象集合<br />只有真实发生多表查询时，才需要设计和修改实体类，否则不提前设计和修改实体类<br />无论多少张表联查，实体类设计都是两两考虑<br />在查询映射的时候，只需要关注本次查询相关的属性。例如：查询订单和对应的客户，就不要关注客户中的订单集合
+
+**多表映射案例**<br />数据库：
+```sql
+CREATE TABLE `t_customer` (`customer_id` INT NOT NULL AUTO_INCREMENT, `customer_name` CHAR(100), PRIMARY KEY (`customer_id`) );
+
+CREATE TABLE `t_order` ( `order_id` INT NOT NULL AUTO_INCREMENT, `order_name` CHAR(100), `customer_id` INT, PRIMARY KEY (`order_id`) ); 
+
+INSERT INTO `t_customer` (`customer_name`) VALUES ('c01');
+
+INSERT INTO `t_order` (`order_name`, `customer_id`) VALUES ('o1', '1');
+INSERT INTO `t_order` (`order_name`, `customer_id`) VALUES ('o2', '1');
+INSERT INTO `t_order` (`order_name`, `customer_id`) VALUES ('o3', '1'); 
+```
+
+实体类设计：
+```java
+@Data
+public class Customer {
+  private Integer customerId;
+  private String customerName;
+  private List<Order> orderList;// 体现的是对多的关系
+  
+}  
+
+@Data
+public class Order {
+  private Integer orderId;
+  private String orderName;
+  private Customer customer;// 体现的是对一的关系
+  
+}
+```
+
+## 3.2 对一映射
+
+1. 需求说明：根据ID查询订单，以及订单关联的用户的信息  
+2.  OrderMapper接口  
+```java
+public interface OrderMapper {
+    // 根据id查询订单信息和订单对应的客户
+    Order queryOrderById(Integer id);
+}
+```
+
+3.  OrderMapper.xml配置文件 
+```xml
+<!-- namespace为接口的全限定符 -->
+<mapper namespace="com.hut.mapper.OrderMapper">
+    <!--自定义嵌套对象的映射关系-->
+    <resultMap id="orderMap" type="order">
+        <!--order的主键，id标签-->
+        <id column="order_id" property="orderId"/>
+        <!--普通列-->
+        <result column="order_name" property="orderName"/>
+        <result column="customer_id" property="customerId"/>
+
+        <!--对象属性赋值
+            property 对象属性名
+            javaType 对象属性类型
+        -->
+        <association property="customer" javaType="customer">
+            <id column="customer_id" property="customerId"/>
+            <result column="customer_name" property="customerName"/>
+        </association>
+    </resultMap>
+    
+    <!--根据id查询订单和订单关联的客户信息-->
+    <select id="queryOrderById" resultMap="orderMap">
+        select * from t_order tor JOIN t_customer tur
+        on tor.customer_id = tur.customer_id
+        where tor.order_id = #{id}
+    </select>
+
+</mapper>
+```
+
+4.  Mybatis全局注册Mapper文件
+```xml
+<mappers>
+        <!-- Mapper注册：指定Mybatis映射文件的具体位置 -->
+        <!-- mapper标签：配置一个具体的Mapper映射文件 -->
+        <!-- resource属性：指定Mapper映射文件的实际存储位置，这里需要使用一个以类路径根目录为基准的相对路径 -->
+        <!--    对Maven工程的目录结构来说，resources目录下的内容会直接放入类路径，所以这里我们可以以resources目录为基准 -->
+        <mapper resource="mappers/OrderMapper.xml"/>
+    </mappers>
+```
+
+5.  junit测试程序  
+```java
+public class MybatisTest {
+
+    private SqlSession session;
+
+    // junit5会在每一个@Test方法前执行@BeforeEach方法
+    @BeforeEach
+    public void init() throws IOException {
+        session = new SqlSessionFactoryBuilder()
+                .build(Resources.getResourceAsStream("mybatis-config.xml")).openSession(true);
+        
+    }
+
+    // junit5会在每一个@Test方法后执行@@AfterEach方法
+    @AfterEach
+    public void clear() {
+        session.close();
+    }
+
+    @Test
+    public void testToOne() {
+        // 查询订单和对应的客户
+        OrderMapper orderMapper = session.getMapper(OrderMapper.class);
+        Order order = orderMapper.queryOrderById(1);
+        System.out.println("order = " + order);
+        System.out.println("order.getCustomer() = " + order.getCustomer());
+    }
+}
+
+```
+
+6.  关键词<br />在“对一”关联关系中，我们的配置比较多，但是关键词就只有：`association`和`javaType `
+7. <br />
+## 3.3 对多映射
+
+1. 需求说明： 查询客户和客户关联的订单信息 
+2.  CustomerMapper接口 
+```java
+public interface CustomerMapper {
+
+    // 查询所有客户信息以及客户对应的订单信息
+    List<Customer> queryList();
+}
+```
+
+3.  CustomerMapper.xml文件  
+```xml
+<!-- namespace为接口的全限定符 -->
+<mapper namespace="com.hut.mapper.CustomerMapper">
+
+    <resultMap id="customerMap" type="customer">
+        <id property="customerId" column="customer_id"/>
+<!--        <result property="customerName" column="customer_name"/>-->
+        <!--给集合属性赋值-->
+        <collection property="orderList" ofType="order">
+            <id property="orderId" column="order_id"/>
+<!--            <result property="orderName" column="order_name"/>-->
+<!--            <result property="customerId" column="customer_id"/>-->
+        </collection>
+    </resultMap>
+
+    <select id="queryList" resultMap="customerMap">
+        select * from t_order tor JOIN t_customer tur
+        on tor.customer_id = tur.customer_id
+    </select>
+</mapper>
+```
+
+4.  Mybatis全局注册Mapper文件  
+```xml
+<mappers>
+        <!-- Mapper注册：指定Mybatis映射文件的具体位置 -->
+        <!-- mapper标签：配置一个具体的Mapper映射文件 -->
+        <!-- resource属性：指定Mapper映射文件的实际存储位置，这里需要使用一个以类路径根目录为基准的相对路径 -->
+        <!--    对Maven工程的目录结构来说，resources目录下的内容会直接放入类路径，所以这里我们可以以resources目录为基准 -->
+        <mapper resource="mappers/OrderMapper.xml"/>
+        <mapper resource="mappers/CustomerMapper.xml"/>
+    </mappers>
+```
+
+5.  junit测试程序  
+```java
+public class MybatisTest {
+
+    private SqlSession session;
+
+    // junit5会在每一个@Test方法前执行@BeforeEach方法
+    @BeforeEach
+    public void init() throws IOException {
+        session = new SqlSessionFactoryBuilder()
+                .build(Resources.getResourceAsStream("mybatis-config.xml")).openSession(true);
+        
+    }
+
+    // junit5会在每一个@Test方法后执行@@AfterEach方法
+    @AfterEach
+    public void clear() {
+        session.close();
+    }
+
+    @Test
+    public void testToMany() {
+        // 查询所有客户信息以及客户对应的订单信息
+        CustomerMapper customerMapper = session.getMapper(CustomerMapper.class);
+        List<Customer> customers = customerMapper.queryList();
+        System.out.println("customers = " + customers);
+        for (Customer customer : customers) {
+            List<Order> orderList = customer.getOrderList();
+            System.out.println("orderList = " + orderList);
+        }
+
+    }
+}
+```
+
+6.  关键词<br />在“对多”关联关系中，同样有很多配置，但是提炼出来最关键的就是：`collection`和`ofType` 
+
+## 3.4 多表映射总结
+### 3.4.1 多表映射优化
+| setting属性 | 属性含义 | 可选值 | 默认值 |
+| --- | --- | --- | --- |
+| autoMappingBehavior | 指定 MyBatis 应如何自动映射列到字段或属性。 NONE 表示关闭自动映射；PARTIAL 只会自动映射没有定义嵌套结果映射的字段。 FULL 会自动映射任何复杂的结果集（无论是否嵌套）。 | NONE, PARTIAL, FULL | PARTIAL |
+
+我们可以将autoMappingBehavior设置为full,进行多表resultMap映射的时候，可以省略符合列和属性命名映射规则（列名=属性名，或者开启驼峰映射也可以自定映射）的result标签<br />修改mybati-sconfig.xml:
+```xml
+<!--开启resultMap自动映射 -->
+<setting name="autoMappingBehavior" value="FULL"/>
+```
+修改CustomerMapper.xml
+```xml
+<resultMap id="customerMap" type="customer">
+    <id property="customerId" column="customer_id"/>
+<!--        <result property="customerName" column="customer_name"/>-->
+    <!--给集合属性赋值-->
+    <collection property="orderList" ofType="order">
+        <id property="orderId" column="order_id"/>
+<!--            <result property="orderName" column="order_name"/>-->
+<!--            <result property="customerId" column="customer_id"/>-->
+    </collection>
+</resultMap>
+```
+
+### 3.4.2 多表映射总结
+| 关联关系 | 配置项关键词 | 所在配置文件和具体位置 |
+| --- | --- | --- |
+| 对一 | association标签/javaType属性/property属性 | Mapper配置文件中的resultMap标签内 |
+| 对多 | collection标签/ofType属性/property属性 | Mapper配置文件中的resultMap标签内 |
+
