@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace为接口的全限定符 -->
+<mapper namespace="com.hut.mapper.CustomerMapper">
+
+    <resultMap id="customerMap" type="customer">
+        <id property="customerId" column="customer_id"/>
+<!--        <result property="customerName" column="customer_name"/>-->
+        <!--给集合属性赋值-->
+        <collection property="orderList" ofType="order">
+            <id property="orderId" column="order_id"/>
+<!--            <result property="orderName" column="order_name"/>-->
+<!--            <result property="customerId" column="customer_id"/>-->
+        </collection>
+    </resultMap>
+
+    <select id="queryList" resultMap="customerMap">
+        select * from t_order tor JOIN t_customer tur
+        on tor.customer_id = tur.customer_id
+    </select>
+</mapper>
