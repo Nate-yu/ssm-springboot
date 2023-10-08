@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace为接口的全限定符 -->
+<mapper namespace="com.hut.mapper.EmployeeMapper">
+    <!--如果传入属性就判断相等，没传入就不加条件-->
+    <select id="query" resultType="employee">
+        select * from t_emp
+        <where>
+            <if test="name!=null">
+                emp_name = #{name}
+            </if>
+            <if test="salary!=null and salary &gt; 100">
+                and emp_salary = #{salary}
+            </if>
+        </where>
+    </select>
+</mapper>
