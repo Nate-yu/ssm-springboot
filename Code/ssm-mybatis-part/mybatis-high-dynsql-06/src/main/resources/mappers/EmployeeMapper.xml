@@ -4,9 +4,13 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- namespace为接口的全限定符 -->
 <mapper namespace="com.hut.mapper.EmployeeMapper">
+    <sql id="selectAll">
+        select * from t_emp
+    </sql>
+
     <!--如果传入属性就判断相等，没传入就不加条件-->
     <select id="query" resultType="employee">
-        select * from t_emp
+        <include refid="selectAll"/>
         <where>
             <if test="name!=null">
                 emp_name = #{name}
@@ -16,4 +20,93 @@
             </if>
         </where>
     </select>
+
+    <update id="update">
+        update t_emp
+        <set>
+            <if test="empName != null">
+                emp_name = #{name},
+            </if>
+            <if test="empSalary != null">
+                emp_salary = #{salary}
+            </if>
+        </set>
+        where emp_id = #{empId}
+    </update>
+
+    <select id="queryTrim" resultType="employee">
+        <include refid="selectAll"/>
+        <trim prefix="where" prefixOverrides="and|or">
+            <if test="name!=null">
+                emp_name = #{name}
+            </if>
+            <if test="salary!=null and salary &gt; 100">
+                and emp_salary = #{salary}
+            </if>
+        </trim>
+    </select>
+
+    <update id="updateTrim">
+        update t_emp
+        <trim prefix="set" suffixOverrides=",">
+            <if test="empName != null">
+                emp_name = #{name},
+            </if>
+            <if test="empSalary != null">
+                emp_salary = #{salary}
+            </if>
+        </trim>
+        where emp_id = #{empId}
+    </update>
+
+    <select id="queryChoose" resultType="employee">
+        <include refid="selectAll"/>
+        where
+        <choose>
+            <when test="name!=null">
+                emp_name = #{name}
+            </when>
+            <when test="salary!=null">
+                emp_salary = #{salary}
+            </when>
+            <otherwise>1=1</otherwise>
+        </choose>
+    </select>
+
+    <select id="queryBatch" resultType="employee">
+        <include refid="selectAll"/>
+        where emp_id in
+        <!-- 遍历的数据
+                 collection="ids | arg0 | list"
+                 open 遍历之前要追加的字符串
+                 close 遍历之后要追加的字符串
+                 separator 遍历时中间的分隔符，最后一次不会追加
+                 item 每个遍历项
+        -->
+        <foreach collection="ids" open="(" separator="," close=")" item="id">
+            <!--遍历的内容-->
+            #{id}
+        </foreach>
+    </select>
+
+    <delete id="deleteBatch">
+        delete from t_emp where id in
+            <foreach collection="ids" open="(" separator="," close=")" item="id">
+                #{id}
+            </foreach>
+    </delete>
+    
+    <insert id="insertBatch">
+        insert into t_emp (emp_name,emp_salary) values
+            <foreach collection="list" separator="," item="employee">
+                (#{employee.empName},#{employee.empSalary})
+            </foreach>
+    </insert>
+
+    <update id="updateBatch">
+        <foreach collection="list" item="emp">
+            update t_emp set emp_name=#{emp.empName},emp_salary=#{emp.empSalary} where emp_id = #{emp.emp_id}
+        </foreach>
+    </update>
+
 </mapper>
