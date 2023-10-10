@@ -1117,3 +1117,208 @@ public class MybatisTest {
 | 对一 | association标签/javaType属性/property属性 | Mapper配置文件中的resultMap标签内 |
 | 对多 | collection标签/ofType属性/property属性 | Mapper配置文件中的resultMap标签内 |
 
+
+# 4 MyBatis 动态语句
+## 4.1 动态语句需求与简介
+动态 SQL 是 MyBatis 的强大特性之一。如果你使用过 JDBC 或其它类似的框架，你应该能理解根据不同条件拼接 SQL 语句有多痛苦，例如拼接时要确保不能忘记添加必要的空格，还要注意去掉列表最后一个列名的逗号。利用动态 SQL，可以彻底摆脱这种痛苦。<br />使用动态 SQL 并非一件易事，但借助可用于任何 SQL 映射语句中的强大的动态 SQL 语言，MyBatis 显著地提升了这一特性的易用性。<br />如果你之前用过 JSTL 或任何基于类 XML 语言的文本处理器，你对动态 SQL 元素可能会感觉似曾相识。在 MyBatis 之前的版本中，需要花时间了解大量的元素。借助功能强大的基于 OGNL 的表达式，MyBatis 3 替换了之前的大部分元素，大大精简了元素种类，现在要学习的元素种类比原来的一半还要少。
+
+## 4.2 if和where 标签
+使用动态 SQL 最常见情景是根据条件包含 where / if 子句的一部分。比如：  
+```xml
+<!-- List<Employee> selectEmployeeByCondition(Employee employee); -->
+<select id="selectEmployeeByCondition" resultType="employee">
+    select emp_id,emp_name,emp_salary from t_emp
+    <!-- where标签会自动去掉“标签体内前面多余的and/or” -->
+    <where>
+        <!-- 使用if标签，让我们可以有选择的加入SQL语句的片段。这个SQL语句片段是否要加入整个SQL语句，就看if标签判断的结果是否为true -->
+        <!-- 在if标签的test属性中，可以访问实体类的属性，不可以访问数据库表的字段 -->
+        <if test="empName != null">
+            <!-- 在if标签内部，需要访问接口的参数时还是正常写#{} -->
+            or emp_name=#{empName}
+        </if>
+        <if test="empSalary &gt; 2000">
+            or emp_salary>#{empSalary}
+        </if>
+        <!--
+         第一种情况：所有条件都满足 WHERE emp_name=? or emp_salary>?
+         第二种情况：部分条件满足 WHERE emp_salary>?
+         第三种情况：所有条件都不满足 没有where子句
+         -->
+    </where>
+</select>
+```
+## 4.3 set 标签
+```xml
+<!-- void updateEmployeeDynamic(Employee employee) -->
+<update id="updateEmployeeDynamic">
+    update t_emp
+    <!-- set emp_name=#{empName},emp_salary=#{empSalary} -->
+    <!-- 使用set标签动态管理set子句，并且动态去掉两端多余的逗号 -->
+    <set>
+        <if test="empName != null">
+            emp_name=#{empName},
+        </if>
+        <if test="empSalary &lt; 3000">
+            emp_salary=#{empSalary},
+        </if>
+    </set>
+    where emp_id=#{empId}
+    <!--
+         第一种情况：所有条件都满足 SET emp_name=?, emp_salary=?
+         第二种情况：部分条件满足 SET emp_salary=?
+         第三种情况：所有条件都不满足 update t_emp where emp_id=?
+            没有set子句的update语句会导致SQL语法错误
+     -->
+</update>
+```
+
+## 4.4 trim 标签（了解）
+使用trim标签控制条件部分两端是否包含某些字符
+
+- prefix属性：指定要动态添加的前缀
+- suffix属性：指定要动态添加的后缀
+- prefixOverrides属性：指定要动态去掉的前缀，使用“|”分隔有可能的多个值
+- suffixOverrides属性：指定要动态去掉的后缀，使用“|”分隔有可能的多个值
+```xml
+<select id="queryTrim" resultType="employee">
+    <include refid="selectAll"/>
+    <trim prefix="where" prefixOverrides="and|or">
+        <if test="name!=null">
+            emp_name = #{name}
+        </if>
+        <if test="salary!=null and salary &gt; 100">
+            and emp_salary = #{salary}
+        </if>
+    </trim>
+</select>
+
+<update id="updateTrim">
+    update t_emp
+   	<!-- prefix属性指定要动态添加的前缀 -->
+    <!-- suffix属性指定要动态添加的后缀 -->
+    <!-- prefixOverrides属性指定要动态去掉的前缀，使用“|”分隔有可能的多个值 -->
+    <!-- suffixOverrides属性指定要动态去掉的后缀，使用“|”分隔有可能的多个值 -->
+    <!-- 当前例子用where标签实现更简洁，但是trim标签更灵活，可以用在任何有需要的地方 -->
+    <trim prefix="set" suffixOverrides=",">
+        <if test="empName != null">
+            emp_name = #{name},
+        </if>
+        <if test="empSalary != null">
+            emp_salary = #{salary}
+        </if>
+    </trim>
+    where emp_id = #{empId}
+</update>
+```
+
+## 4.5 choose/when/otherwise 标签
+在多个分支条件中，仅执行一个。
+
+- 从上到下依次执行条件判断
+- 遇到的第一个满足条件的分支会被采纳
+- 被采纳分支后面的分支都将不被考虑
+- 如果所有的when分支都不满足，那么就执行otherwise分支
+```xml
+<select id="queryChoose" resultType="employee">
+    <include refid="selectAll"/>
+    where
+    <choose>
+        <when test="name!=null">
+            emp_name = #{name}
+        </when>
+        <when test="salary!=null">
+            emp_salary = #{salary}
+        </when>
+        <otherwise>1=1</otherwise>
+    </choose>
+</select>
+```
+
+## 4.6 foreach 标签
+**基本用法**<br />用批量插入举例
+
+```xml
+<!--
+    collection属性：要遍历的集合
+    item属性：遍历集合的过程中能得到每一个具体对象，在item属性中设置一个名字，将来通过这个名字引用遍历出来的对象
+    separator属性：指定当foreach标签的标签体重复拼接字符串时，各个标签体字符串之间的分隔符
+    open属性：指定整个循环把字符串拼好后，字符串整体的前面要添加的字符串
+    close属性：指定整个循环把字符串拼好后，字符串整体的后面要添加的字符串
+    index属性：这里起一个名字，便于后面引用
+        遍历List集合，这里能够得到List集合的索引值
+        遍历Map集合，这里能够得到Map集合的key
+ -->
+<foreach collection="empList" item="emp" separator="," open="values" index="myIndex">
+    <!-- 在foreach标签内部如果需要引用遍历得到的具体的一个对象，需要使用item属性声明的名称 -->
+    (#{emp.empName},#{myIndex},#{emp.empSalary},#{emp.empGender})
+</foreach>
+```
+**批量更新时需要注意**<br />上面批量插入的例子本质上是一条SQL语句，而实现批量更新则需要多条SQL语句拼起来，用分号分开。也就是一次性发送多条SQL语句让数据库执行。此时需要在数据库连接信息的URL地址中设置：
+```xml
+<property name="url" value="jdbc:mysql://localhost:3306/mybatis-example?useUnicode=true&amp;characterEncoding=UTF-8&amp;allowMultiQueries=true"/>
+```
+对应的foreach标签如下：
+```xml
+<!-- int updateEmployeeBatch(@Param("empList") List<Employee> empList) -->
+<update id="updateEmployeeBatch">
+    <foreach collection="empList" item="emp" separator=";">
+        update t_emp set emp_name=#{emp.empName} where emp_id=#{emp.empId}
+    </foreach>
+</update>
+```
+
+**增删查改举例**
+```xml
+<select id="queryBatch" resultType="employee">
+  <include refid="selectAll"/>
+  where emp_id in
+  <!-- 遍历的数据
+  collection="ids | arg0 | list"
+  open 遍历之前要追加的字符串
+  close 遍历之后要追加的字符串
+  separator 遍历时中间的分隔符，最后一次不会追加
+  item 每个遍历项
+  -->
+  <foreach collection="ids" open="(" separator="," close=")" item="id">
+    <!--遍历的内容-->
+    #{id}
+  </foreach>
+</select>
+
+<delete id="deleteBatch">
+  delete from t_emp where id in
+  <foreach collection="ids" open="(" separator="," close=")" item="id">
+    #{id}
+  </foreach>
+</delete>
+
+<insert id="insertBatch">
+  insert into t_emp (emp_name,emp_salary) values
+  <foreach collection="list" separator="," item="employee">
+    (#{employee.empName},#{employee.empSalary})
+  </foreach>
+</insert>
+
+<update id="updateBatch">
+  <foreach collection="list" item="emp">
+    update t_emp set emp_name=#{emp.empName},emp_salary=#{emp.empSalary} where emp_id = #{emp.emp_id}
+  </foreach>
+</update>
+```
+**关于foreach标签的collection属性**<br />如果没有给接口中List类型的参数使用@Param注解指定一个具体的名字，那么在collection属性中默认可以使用collection或list来引用这个list集合。这一点可以通过异常信息看出来：
+```java
+Parameter 'empList' not found. Available parameters are [arg0, collection, list]
+```
+在实际开发中，为了避免隐晦的表达造成一定的误会，建议使用@Param注解明确声明变量的名称，然后在foreach标签的collection属性中按照@Param注解指定的名称来引用传入的参数。
+
+## 4.7 sql片段
+抽取重复的SQL片段
+```xml
+<sql id="selectAll">
+  select * from t_emp
+</sql>
+```
+引用抽取的SQL片段
+```xml
+<include refid="selectAll"/>
+```
