@@ -1236,7 +1236,6 @@ public class MybatisTest {
 
 ## 4.6 foreach 标签
 **基本用法**<br />用批量插入举例
-
 ```xml
 <!--
     collection属性：要遍历的集合
@@ -1322,3 +1321,155 @@ Parameter 'empList' not found. Available parameters are [arg0, collection, list]
 ```xml
 <include refid="selectAll"/>
 ```
+
+# 5 MyBatis 高级扩展
+## 5.1 Mapper 批量映射优化
+
+1.  需求<br />Mapper 配置文件很多时，在全局配置文件中一个一个注册太麻烦，希望有一个办法能够一劳永逸。 
+2.  配置方式<br />Mybatis 允许在指定 Mapper 映射文件时，只指定其所在的包： 
+```xml
+<mappers>
+    <package name="com.atguigu.mapper"/>
+</mappers>
+```
+此时这个包下的所有 Mapper 配置文件将被自动加载、注册，比较方便。
+
+3. 资源创建要求
+- Mapper 接口和 Mapper 配置文件名称一致 
+   - Mapper 接口：EmployeeMapper.java
+   - Mapper 配置文件：EmployeeMapper.xml
+- Mapper 配置文件放在 Mapper 接口所在的包内 
+   -  可以将mapperxml文件放在mapper接口所在的包
+   -  可以在sources下创建mapper接口包一致的文件夹结构存放mapperxml文件<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697121758867-e7c4eafd-9be6-4956-99b5-652282bc8c30.png#averageHue=%23e8e6e5&clientId=u61f6968c-6c05-4&from=paste&id=u0da07109&originHeight=330&originWidth=523&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u4669c18b-de3c-4d99-b256-69f36510ac6&title=)<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697121768545-d1be9e4f-6ad6-45de-abe1-27a392f1aa4e.png#averageHue=%23eeeceb&clientId=u61f6968c-6c05-4&from=paste&id=udc488bbe&originHeight=391&originWidth=525&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ud3a151e5-c48d-4027-aa8c-c1fdca70b2d&title=) 
+
+## 5.2 插件和分页插件PageHelper
+### 5.2.1 插件机制和PageHelper插件介绍
+MyBatis 对插件进行了标准化的设计，并提供了一套可扩展的插件机制。插件可以在用于语句执行过程中进行拦截，并允许通过自定义处理程序来拦截和修改 SQL 语句、映射语句的结果等。<br />具体来说，MyBatis 的插件机制包括以下三个组件：
+
+1. `Interceptor`（拦截器）：定义一个拦截方法 `intercept`，该方法在执行 SQL 语句、执行查询、查询结果的映射时会被调用。
+2. `Invocation`（调用）：实际上是对被拦截的方法的封装，封装了 `Object target`、`Method method` 和 `Object[] args` 这三个字段。
+3. `InterceptorChain`（拦截器链）：对所有的拦截器进行管理，包括将所有的 Interceptor 链接成一条链，并在执行 SQL 语句时按顺序调用。
+
+插件的开发非常简单，只需要实现 Interceptor 接口，并使用注解 `@Intercepts` 来标注需要拦截的对象和方法，然后在 MyBatis 的配置文件中添加插件即可。<br />PageHelper 是 MyBatis 中比较著名的分页插件，它提供了多种分页方式（例如 MySQL 和 Oracle 分页方式），支持多种数据库，并且使用非常简单。下面就介绍一下 PageHelper 的使用方式。
+
+### 5.2.2 PageHelper插件使用
+
+1. pom.xml引入依赖
+```xml
+<dependency>
+    <groupId>com.github.pagehelper</groupId>
+    <artifactId>pagehelper</artifactId>
+    <version>5.1.11</version>
+</dependency>
+```
+
+2.  mybatis-config.xml配置分页插件<br />在 MyBatis 的配置文件中添加 PageHelper 的插件： 
+```xml
+<!-- 配置分页插件 -->
+<plugins>
+    <plugin interceptor="com.github.pagehelper.PageInterceptor">
+        <!--插件语法对应的数据库类型-->
+        <property name="helperDialect" value="mysql"/>
+    </plugin>
+</plugins>
+```
+其中，`com.github.pagehelper.PageInterceptor`是 PageHelper 插件的名称，`dialect`属性用于指定数据库类型（支持多种数据库）
+
+3.  页插件使用<br />在查询方法中使用分页： 
+```java
+@Test
+public void test_01() {
+    EmployeeMapper mapper = session.getMapper(EmployeeMapper.class);
+    // 调用之前，先设置分页数据(从第几页开始查，每页显示多少)
+    PageHelper.startPage(1,2);
+
+    // TODO: 注意，不能将两条查询装到一个分页区
+    List<Employee> employees = mapper.queryAll();
+
+    // 将查询数据封装到一个PageInfo的分页实体类（一共有多少页，一共有多少条）
+    PageInfo<Employee> employeePageInfo = new PageInfo<>(employees);
+    // pageInfo获取分页的数据
+    // 当前页的数据，总页数，总条数，页面数，每页的条数
+    List<Employee> list1 = employeePageInfo.getList();
+    System.out.println("list1 = " + list1);
+    int pages = employeePageInfo.getPages();
+    System.out.println("pages = " + pages);
+    long total = employeePageInfo.getTotal();
+    System.out.println("total = " + total);
+    int pageNum = employeePageInfo.getPageNum();
+    System.out.println("pageNum = " + pageNum);
+    int pageSize = employeePageInfo.getPageSize();
+    System.out.println("pageSize = " + pageSize);
+}
+```
+
+## 5.3 逆向工程和MyBatisX插件
+### 5.3.1 ORM思维介绍
+ORM（Object-Relational Mapping，对象-关系映射）是一种将数据库和面向对象编程语言中的对象之间进行转换的技术。它将对象和关系数据库的概念进行映射，最后我们就可以通过方法调用进行数据库操作<br />最终：**让我们可以使用面向对象思维进行数据库操作**<br />**ORM 框架通常有半自动和全自动两种方式。**
+
+- 半自动 ORM 通常需要程序员手动编写 SQL 语句或者配置文件，将实体类和数据表进行映射，还需要手动将查询的结果集转换成实体对象。
+- 全自动 ORM 则是将实体类和数据表进行自动映射，使用 API 进行数据库操作时，ORM 框架会自动执行 SQL 语句并将查询结果转换成实体对象，程序员无需再手动编写 SQL 语句和转换代码。
+
+**下面是半自动和全自动 ORM 框架的区别：**
+
+1. 映射方式：半自动 ORM 框架需要程序员手动指定实体类和数据表之间的映射关系，通常使用 XML 文件或注解方式来指定；全自动 ORM 框架则可以自动进行实体类和数据表的映射，无需手动干预。
+2. 查询方式：半自动 ORM 框架通常需要程序员手动编写 SQL 语句并将查询结果集转换成实体对象；全自动 ORM 框架可以自动组装 SQL 语句、执行查询操作，并将查询结果转换成实体对象。
+3. 性能：由于半自动 ORM 框架需要手动编写 SQL 语句，因此程序员必须对 SQL 语句和数据库的底层知识有一定的了解，才能编写高效的 SQL 语句；而全自动 ORM 框架通过自动优化生成的 SQL 语句来提高性能，程序员无需进行优化。
+4. 学习成本：半自动 ORM 框架需要程序员手动编写 SQL 语句和映射配置，要求程序员具备较高的数据库和 SQL 知识；全自动 ORM 框架可以自动生成 SQL 语句和映射配置，程序员无需了解过多的数据库和 SQL 知识。
+
+常见的半自动 ORM 框架包括 MyBatis 等；常见的全自动 ORM 框架包括 Hibernate、Spring Data JPA、MyBatis-Plus 等。
+
+### 5.3.2 逆向工程
+MyBatis 的逆向工程是一种自动化生成持久层代码和映射文件的工具，它可以根据数据库表结构和设置的参数生成对应的实体类、Mapper.xml 文件、Mapper 接口等代码文件，简化了开发者手动生成的过程。逆向工程使开发者可以快速地构建起 DAO 层，并快速上手进行业务开发。<br />MyBatis 的逆向工程有两种方式：通过 MyBatis Generator 插件实现和通过 Maven 插件实现。无论是哪种方式，逆向工程一般需要指定一些配置参数，例如数据库连接 URL、用户名、密码、要生成的表名、生成的文件路径等等。<br />总的来说，MyBatis 的逆向工程为程序员提供了一种方便快捷的方式，能够快速地生成持久层代码和映射文件，是半自动 ORM 思维像全自动发展的过程，提高程序员的开发效率。<br />**注意：逆向工程只能生成单表crud的操作，多表查询依然需要我们自己编写**
+
+### 5.3.3 逆向工程插件MyBatisX的使用
+MyBatisX 是一个 MyBatis 的代码生成插件，可以通过简单的配置和操作快速生成 MyBatis Mapper、pojo 类和 Mapper.xml 文件。下面是使用 MyBatisX 插件实现逆向工程的步骤：
+
+1.  安装插件：<br />在 IntelliJ IDEA 中打开插件市场，搜索 MyBatisX 并安装。 
+2.  使用 IntelliJ IDEA连接数据库 
+   -  连接数据库<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697122527930-0cdc2fbc-859a-4d21-b4eb-f437a48b9879.png#averageHue=%23f7f6f5&clientId=u61f6968c-6c05-4&from=paste&id=ud0b09357&originHeight=648&originWidth=619&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=udbf555af-73b0-49af-ac57-8659c4e9f42&title=)
+   -  填写信息<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697122542182-473c9ae3-a6f6-4003-bd53-b94fbdf13b0b.png#averageHue=%23e0d8ce&clientId=u61f6968c-6c05-4&from=paste&id=ue33b4f20&originHeight=542&originWidth=654&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u1f39802d-dae6-418b-897f-f64da5eadc1&title=) 
+   -  展示库表<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697122565407-72a34d31-206b-4290-b2d1-5f8035de3a68.png#averageHue=%23faf9f8&clientId=u61f6968c-6c05-4&from=paste&id=ue8775156&originHeight=676&originWidth=584&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ubeb6a38d-5c22-4477-ae8b-9dda1074913&title=) 
+   -  逆向工程使用<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697122576369-151793da-63ae-402f-bafc-4d12579123ae.png#averageHue=%23f3f3f2&clientId=u61f6968c-6c05-4&from=paste&id=u9417046d&originHeight=707&originWidth=538&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=ua3216d16-2242-40a8-a8ab-c41eafeaf7f&title=)<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697122584330-76659016-16ff-4b3c-bcb9-4098bfe0fa8e.png#averageHue=%23f6f5f4&clientId=u61f6968c-6c05-4&from=paste&id=u1f23099e&originHeight=369&originWidth=650&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u5891f1fa-7d1b-4389-8959-1e111ffc67a&title=)<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697122752916-2ff22f28-86b9-40f1-b3c6-830f7c89104c.png#averageHue=%23f2f1f0&clientId=u61f6968c-6c05-4&from=paste&id=uadd6b3a9&originHeight=371&originWidth=653&originalType=url&ratio=1.25&rotation=0&showTitle=false&status=done&style=none&taskId=u4434a965-3018-4fe2-9965-1841cfcf7e7&title=) 
+3. 查看生成结果
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697122702131-07757474-9420-4246-9601-2997a7ee9808.png#averageHue=%232d3036&clientId=u61f6968c-6c05-4&from=paste&height=380&id=u5784595a&originHeight=475&originWidth=471&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=31261&status=done&style=none&taskId=u0c21fa57-dfbc-4044-8359-c2bdd6dea5b&title=&width=376.8)
+
+4.  逆向工程案例使用<br />正常使用即可，自动生成单表的crud方法！ 
+```java
+package generator.mapper;
+
+import generator.com.hut.pojo.User;
+
+/**
+* @author 12279
+* @description 针对表【user】的数据库操作Mapper
+* @createDate 2023-10-12 22:13:58
+* @Entity generator.com.hut.pojo.User
+*/
+public interface UserMapper {
+
+    int deleteByPrimaryKey(Long id);
+
+    int insert(User record);
+
+    int insertSelective(User record);
+
+    User selectByPrimaryKey(Long id);
+
+    int updateByPrimaryKeySelective(User record);
+
+    int updateByPrimaryKey(User record);
+
+}
+
+```
+
+# 6 MyBatis 总结
+| 核心点 | 掌握目标 |
+| --- | --- |
+| mybatis基础 | 使用流程, 参数输入,#{} ${},参数输出 |
+| mybatis多表 | 实体类设计,resultMap多表结果映射 |
+| mybatis动态语句 | Mybatis动态语句概念, where , if , foreach标签 |
+| mybatis扩展 | Mapper批量处理,分页插件,逆向工程 |
+
