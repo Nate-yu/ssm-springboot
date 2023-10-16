@@ -4,7 +4,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequestMapping("user")
@@ -16,7 +15,7 @@ public class UserController {
      * 2. 支持模糊，* 任意一层字符串 | ** 任意层任意字符串
      * 3. 类上和方法上添加@RequestMapping
      *      a. 类上提取通用的访问地址
-     *      b. 方法三是具体的handler地址
+     *      b. 方法上是具体的handler地址
      * 4. 请求方式指定（get|post|put|delete）
      *      a. 默认情况下，任何方式都可以访问
      *      b. 指定请求方式

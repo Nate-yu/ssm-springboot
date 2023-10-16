@@ -156,3 +156,137 @@ public class SpringMvcInit extends AbstractAnnotationConfigDispatcherServletInit
 
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697292655408-516ff87d-30f6-4ac5-a7d2-07ade103a54d.png#averageHue=%23a2a19f&clientId=u8b810802-34b1-4&from=paste&height=179&id=u8ae65bfb&originHeight=224&originWidth=700&originalType=binary&ratio=1.25&rotation=0&showTitle=false&size=18685&status=done&style=none&taskId=u126bca66-fb20-455d-9f16-e6a10054123&title=&width=560)
 
+# 2 SpringMVC 接收数据
+## 2.1 访问路径设置
+`@RequestMapping`注解的作用就是将请求的 URL 地址和处理请求的方式（handler方法）关联起来，建立映射关系。<br />SpringMVC 接收到指定的请求，就会来找到在映射关系中对应的方法来处理这个请求。
+
+1. 精准路径匹配
+```java
+@Controller
+@RequestMapping("user")
+public class UserController {
+
+    /**
+     * 精准设置访问地址 /user/login
+     */
+    @RequestMapping(value = {"login"})
+    @ResponseBody
+    public String login(){
+        System.out.println("UserController.login");
+        return "login success!!";
+    }
+
+    /**
+     * 精准设置访问地址 /user/register
+     */
+    @RequestMapping(value = {"register"})
+    @ResponseBody
+    public String register(){
+        System.out.println("UserController.register");
+        return "register success!!";
+    }
+    
+}
+```
+
+2. 模糊路径匹配
+
+ 在`@RequestMapping`注解指定 URL 地址时，通过使用通配符，匹配多个类似的地址。  
+```java
+@Controller
+public class ProductController {
+
+    /**
+     *  路径设置为 /product/*  
+     *    /* 为单层任意字符串  /product/a  /product/aaa 可以访问此handler  
+     *    /product/a/a 不可以
+     *  路径设置为 /product/** 
+     *   /** 为任意层任意字符串  /product/a  /product/aaa 可以访问此handler  
+     *   /product/a/a 也可以访问
+     */
+    @RequestMapping("/product/*")
+    @ResponseBody
+    public String show(){
+        System.out.println("ProductController.show");
+        return "product show!";
+    }
+}
+```
+单层匹配和多层匹配：<br />  /*：只能匹配URL地址中的一层，如果想准确匹配两层，那么就写“/*/*”以此类推。<br />  /**：可以匹配URL地址中的多层。<br />其中所谓的一层或多层是指一个URL地址字符串被“/”划分出来的各个层次<br />这个知识点虽然对于`@RequestMapping`注解来说实用性不大，但是将来配置拦截器的时候也遵循这个规则。
+
+3. 类和方法级别区别
+
+`@RequestMapping` 注解可以用于类级别和方法级别，它们之间的区别如下：
+
+   1. 设置到类级别：`@RequestMapping` 注解可以设置在控制器类上，用于映射整个控制器的通用请求路径。这样，如果控制器中的多个方法都需要映射同一请求路径，就不需要在每个方法上都添加映射路径。
+   2. 设置到方法级别：`@RequestMapping` 注解也可以单独设置在控制器方法上，用于更细粒度地映射请求路径和处理方法。当多个方法处理同一个路径的不同操作时，可以使用方法级别的 `@RequestMapping` 注解进行更精细的映射。
+```java
+//1.标记到handler方法
+@RequestMapping("/user/login")
+@RequestMapping("/user/register")
+@RequestMapping("/user/logout")
+
+//2.优化标记类+handler方法
+//类上
+@RequestMapping("/user")
+//handler方法上
+@RequestMapping("/login")
+@RequestMapping("/register")
+@RequestMapping("/logout")
+```
+
+4. 附带请求方式限制
+
+ HTTP 协议定义了八种请求方式，在 SpringMVC 中封装到了下面这个枚举类：  
+```java
+public enum RequestMethod {
+  GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS, TRACE
+}
+```
+默认情况下：@RequestMapping("/logout") 任何请求方式都可以访问<br />如果需要特定指定：
+```java
+@Controller
+public class UserController {
+
+    /**
+     * 精准设置访问地址 /user/login
+     * method = RequestMethod.POST 可以指定单个或者多个请求方式
+     * 注意:违背请求方式会出现405异常
+     */
+    @RequestMapping(value = {"/user/login"} , method = RequestMethod.POST)
+    @ResponseBody
+    public String login(){
+        System.out.println("UserController.login");
+        return "login success!!";
+    }
+
+    /**
+     * 精准设置访问地址 /user/register
+     */
+    @RequestMapping(value = {"/user/register"},method = {RequestMethod.POST,RequestMethod.GET})
+    @ResponseBody
+    public String register(){
+        System.out.println("UserController.register");
+        return "register success!!";
+    }
+
+}
+```
+注意：违背请求方式会出现405异常
+
+5. 进阶注解
+
+还有 `@RequestMapping` 的 HTTP 方法特定快捷方式变体：
+
+- `@GetMapping`
+- `@PostMapping`
+- `@PutMapping`
+- `@DeleteMapping`
+- `@PatchMapping`
+```java
+@RequestMapping(value="/login",method=RequestMethod.GET)
+||
+@GetMapping(value="/login")
+```
+ 注意：进阶注解只能添加到handler方法上，无法添加到类上
+
