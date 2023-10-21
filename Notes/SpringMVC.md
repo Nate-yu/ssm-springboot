@@ -290,3 +290,148 @@ public class UserController {
 ```
  注意：进阶注解只能添加到handler方法上，无法添加到类上
 
+## 2.2 接收参数
+### 2.2.1 param和json参数比较
+在 HTTP 请求中，我们可以选择不同的参数类型，如 param 类型和 JSON 类型。下面对这两种参数类型进行区别和对比：
+
+1.  参数编码：<br />param 类型的参数会被编码为 ASCII 码。例如，假设 `name=john doe`，则会被编码为 `name=john%20doe`。而 JSON 类型的参数会被编码为 UTF-8。 
+2.  参数顺序：<br />param 类型的参数没有顺序限制。但是，JSON 类型的参数是有序的。JSON 采用键值对的形式进行传递，其中键值对是有序排列的。 
+3.  数据类型：<br />param 类型的参数仅支持字符串类型、数值类型和布尔类型等简单数据类型。而 JSON 类型的参数则支持更复杂的数据类型，如数组、对象等。 
+4.  嵌套性：<br />param 类型的参数不支持嵌套。但是，JSON 类型的参数支持嵌套，可以传递更为复杂的数据结构。 
+5.  可读性：<br />param 类型的参数格式比 JSON 类型的参数更加简单、易读。但是，JSON 格式在传递嵌套数据结构时更加清晰易懂。 
+
+总的来说，param 类型的参数适用于单一的数据传递，而 JSON 类型的参数则更适用于更复杂的数据结构传递。根据具体的业务需求，需要选择合适的参数类型。在实际开发中，常见的做法是：在 GET 请求中采用 param 类型的参数，而在 POST 请求中采用 JSON 类型的参数传递。
+
+### 2.2.2 param 参数接收
+建立项目配置类（com.hut.config包下）
+```java
+/**
+ * 项目配置类，讲controller handlerMapping handlerAdapter加入ioc容器
+ */
+@Configuration
+@ComponentScan("com.hut.param")
+public class MvcConfig {
+
+    @Bean
+    public RequestMappingHandlerMapping handlerMapping() {
+        return new RequestMappingHandlerMapping();
+    }
+
+    @Bean
+    public RequestMappingHandlerAdapter handlerAdapter() {
+        return new RequestMappingHandlerAdapter();
+    }
+}
+```
+初始化类（com.hut.config包下）
+```java
+/**
+ * 初始化类
+ */
+public class SpringMVCInit extends AbstractAnnotationConfigDispatcherServletInitializer {
+    @Override
+    protected Class<?>[] getRootConfigClasses() {
+        return new Class[0];
+    }
+
+    /**
+     * springmvc需要组件的配置类
+     * @return
+     */
+    @Override
+    protected Class<?>[] getServletConfigClasses() {
+        return new Class[]{MvcConfig.class};
+    }
+
+    /**
+     * DispatcherServlet
+     * @return
+     */
+    @Override
+    protected String[] getServletMappings() {
+        return new String[]{"/"};
+    }
+}
+```
+
+1. 直接接收
+
+请求参数名 = 形参参数名，参数名可以不传递![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697870908635-dcc4cef4-5eb9-4198-b7cb-9d36ace98e04.png#averageHue=%23fcfbfb&clientId=uda4c230a-5f10-4&from=paste&height=215&id=u36cbf3bf&originHeight=215&originWidth=966&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u0b37637a-0166-4df4-838f-cee6809b438&title=&width=966)<br />只要形参数名和类型与传递参数相同，即可自动接收！
+```java
+@Controller
+@RequestMapping("param")
+public class ParamController {
+    // 1. 直接接收
+    // 请求参数名 = 形参参数名
+    // 名称相同，可以不传递
+    @RequestMapping("data")
+    @ResponseBody
+    public String data(String name, int age) {
+        System.out.println("name = " + name + ", age = " + age);
+        return "name = " + name + ", age = " + age;
+    }
+}
+```
+
+2. 用`@RequestParam`注解接收
+
+可以使用 `@RequestParam` 注释将 Servlet 请求参数（即查询参数或表单数据）绑定到控制器中的方法参数。<br />`@RequestParam`使用场景：
+
+- 指定绑定的请求参数名
+- 要求请求参数必须传递
+- 为请求参数提供默认值
+```java
+// 2. 注解指定
+// 指定请求参数名，或者是否必须传递，或者非必须传递设置默认值
+// 如果形参名和请求参数名一致，可以省略
+// 使用@RequestParam注解标记handler方法的形参
+// 指定形参对应的请求参数@RequestParam(请求参数名称)
+@GetMapping("data1")
+@ResponseBody
+public String data1(@RequestParam(value = "account") String username,
+                    @RequestParam(required = false, defaultValue = "1") int page) {
+    System.out.println("username = " + username + ", page = " + page);
+    return "username = " + username + ", page = " + page;
+}
+```
+默认情况下，使用此批注的方法参数是必需的，但您可以通过将 `@RequestParam`批注的 `required`标志设置为 `false`<br />如果没有没有设置非必须，也没有传递参数会出现：<br />![](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697872512592-a6662e27-eb8f-49ed-8f0c-9c629c7c82a3.png#averageHue=%23cbc3ae&clientId=uda4c230a-5f10-4&from=paste&id=u4d751419&originHeight=246&originWidth=966&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u3301e867-5445-4338-8bd3-187bfa76982&title=)
+
+3. 特殊场景接值
+   1. 一名多值
+
+直接使用集合接值
+```java
+@GetMapping("data2")
+@ResponseBody
+public String data2(@RequestParam List<String> hbs) {
+    System.out.println("hbs = " + hbs);
+    return "ok";
+}
+```
+
+   2. 实体类接收
+
+Spring MVC 是 Spring 框架提供的 Web 框架，它允许开发者使用实体对象来接收 HTTP 请求中的参数。通过这种方式，可以在方法内部直接使用对象的属性来访问请求参数，而不需要每个参数都写一遍。下面是一个使用实体对象接收参数的示例：<br />定义一个用于接收参数的实体类：
+```java
+@Data
+public class User {
+    private String name;
+    private int age;
+}
+```
+		在控制器中，使用实体对象接收，示例代码如下：
+```java
+@Controller
+@RequestMapping("param")
+public class ParamController {
+    
+    // 4. 使用实体对象赋值 【用户信息】
+    @GetMapping("data3")
+    @ResponseBody
+    public String data3(User user) {
+        System.out.println("user = " + user);
+        return user.toString();
+    }
+}
+```
+在上述代码中，将请求参数name和age映射到实体类属性上，要求属性名必须等于参数名，否则无法映射<br />使用postman测试如下<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697873496343-e09e3561-1059-41ba-b632-357c96ec79fa.png#averageHue=%23222221&clientId=ua5d9a72c-bce9-4&from=paste&height=593&id=u5bb6b4bc&originHeight=889&originWidth=2107&originalType=binary&ratio=1.5&rotation=0&showTitle=false&size=70563&status=done&style=none&taskId=uf039d6dc-3c96-47b2-bf95-36c85e5c1ab&title=&width=1404.6666666666667)
