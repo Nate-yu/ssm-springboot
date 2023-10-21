@@ -3,14 +3,16 @@ package com.hut.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
  * 项目配置类，讲controller handlerMapping handlerAdapter加入ioc容器
  */
+@EnableWebMvc // 给handlerAdapter配置json转化器
 @Configuration
-@ComponentScan("com.hut.param")
+@ComponentScan("com.hut.json")
 public class MvcConfig {
 
     @Bean
