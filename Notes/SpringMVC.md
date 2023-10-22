@@ -435,3 +435,88 @@ public class ParamController {
 }
 ```
 在上述代码中，将请求参数name和age映射到实体类属性上，要求属性名必须等于参数名，否则无法映射<br />使用postman测试如下<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/25941432/1697873496343-e09e3561-1059-41ba-b632-357c96ec79fa.png#averageHue=%23222221&clientId=ua5d9a72c-bce9-4&from=paste&height=593&id=u5bb6b4bc&originHeight=889&originWidth=2107&originalType=binary&ratio=1.5&rotation=0&showTitle=false&size=70563&status=done&style=none&taskId=uf039d6dc-3c96-47b2-bf95-36c85e5c1ab&title=&width=1404.6666666666667)
+
+### 2.2.3 路径参数
+路径传递参数是一种在 URL 路径中传递参数的方式。在 RESTful 的 Web 应用程序中，经常使用路径传递参数来表示资源的唯一标识符或更复杂的表示方式。而 Spring MVC 框架提供了 `@PathVariable`注解来处理路径传递参数。<br />`@PathVariable`注解允许将 URL 中的占位符映射到控制器方法中的参数。<br />例如，如果我们想将 `/user/{id}`路径下的 `{id}`映射到控制器方法的一个参数中，则可以使用 `@PathVariable`注解来实现。<br />下面是一个使用 `@PathVariable`注解处理路径传递参数的示例：
+```java
+/**
+ * 动态路径设计 {key}表示在形参列表获取传入的参数
+ * 必须使用@PathVariable注解来表示接收路径参数
+ * @param username
+ * @param password
+ * @return
+ */
+@RequestMapping("{account}/{password}")
+public String login(@PathVariable(value = "account") String username, @PathVariable String password) {
+    System.out.println("username = " + username + ", password = " + password);
+    return "username = " + username + ", password = " + password;
+}
+```
+
+### 2.2.4 json参数接收
+ 前端传递 JSON 数据时，Spring MVC 框架可以使用`@RequestBody`注解来将 JSON 数据转换为 Java 对象。`@RequestBody`注解表示当前方法参数的值应该从请求体中获取，并且需要指定 value 属性来指示请求体应该映射到哪个参数上。其使用方式和示例代码如下：  
+
+1. 前端发送 JSON 数据的示例：（使用postman测试）
+```json
+{
+  "name": "张三",
+  "age": 18,
+  "gender": "男"
+}
+```
+
+2.  定义一个用于接收 JSON 数据的 Java 类，例如：  
+```java
+@Data
+public class Person {
+    private String name;
+    private int age;
+    private String gender;
+}
+```
+
+3.  在控制器中，使用`@RequestBody`注解来接收 JSON 数据，并将其转换为 Java 对象，例如： 
+```java
+@Controller
+@RequestMapping("json")
+@ResponseBody
+public class JsonController {
+
+    // 配置json：1. 导入json处理的依赖，2. handlerAdapter配置json转化器
+    @PostMapping("data")
+    public String data(@RequestBody Person person) {
+        System.out.println("person = " + person);
+        return person.toString();
+    }
+}
+```
+在上述代码中，`@RequestBody`注解将请求体中的 JSON 数据映射到 `Person`类型的 `person`参数上，并将其作为一个对象来传递给 `data()`方法进行处理。
+
+4. 配置json
+   1.  springmvc handlerAdpater配置json转化器,配置类需要明确：  
+```java
+@EnableWebMvc // 给handlerAdapter配置json转化器，使用此注解加入json处理器
+@Configuration
+@ComponentScan("com.hut.json")
+public class MvcConfig {
+
+    @Bean
+    public RequestMappingHandlerMapping handlerMapping() {
+        return new RequestMappingHandlerMapping();
+    }
+
+    @Bean
+    public RequestMappingHandlerAdapter handlerAdapter() {
+        return new RequestMappingHandlerAdapter();
+    }
+}
+```
+
+   2.  pom.xml 加入jackson依赖  
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.15.0</version>
+</dependency>
+```

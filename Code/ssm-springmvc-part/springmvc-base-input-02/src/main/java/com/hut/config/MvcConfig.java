@@ -10,7 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 /**
  * 项目配置类，讲controller handlerMapping handlerAdapter加入ioc容器
  */
-@EnableWebMvc // 给handlerAdapter配置json转化器
+@EnableWebMvc // 给handlerAdapter配置json转化器，加入json处理器
 @Configuration
 @ComponentScan("com.hut.json")
 public class MvcConfig {
