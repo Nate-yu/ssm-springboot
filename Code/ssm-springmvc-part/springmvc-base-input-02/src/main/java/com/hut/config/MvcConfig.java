@@ -12,7 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  */
 @EnableWebMvc // 给handlerAdapter配置json转化器，加入json处理器
 @Configuration
-@ComponentScan("com.hut.json")
+@ComponentScan("com.hut.header")
 public class MvcConfig {
 
     @Bean
