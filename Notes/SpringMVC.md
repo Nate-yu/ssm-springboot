@@ -520,3 +520,153 @@ public class MvcConfig {
     <version>2.15.0</version>
 </dependency>
 ```
+
+## 2.3 接收 Cookie 数据
+使用注解`@CookieValue(value = "cookieName")`将 HTTP Cookie 的值绑定到控制器中的方法参数。
+```java
+/**
+ * 接收cookie
+ */
+@Controller
+@RequestMapping("cookie")
+@ResponseBody
+public class CookieController {
+    @GetMapping("save")
+    public String save(HttpServletResponse response) {
+        Cookie cookie = new Cookie("cookieName", "root");
+        response.addCookie(cookie);
+        return "ok";
+    }
+
+    // cookieName = root
+    @RequestMapping("data")
+    public String data(@CookieValue(value = "cookieName") String value) {
+        System.out.println("value = " + value);
+        return value;
+    }
+}
+```
+
+## 2.4 接收请求头数据
+可以使用注解`@RequestHeader("Host")` 将请求标头绑定到控制器中的方法参数。  
+```java
+@Controller
+@RequestMapping("header")
+@ResponseBody
+public class HeaderController {
+    @GetMapping("data")
+    public String data(@RequestHeader("Host") String host) {
+        System.out.println("host = " + host);
+        return "host = " + host;
+    }
+}
+```
+
+## 2.5 原生Api对象操作
+下表描述了支持的控制器方法参数
+
+| Controller method argument 控制器方法参数 | Description |
+| --- | --- |
+| `jakarta.servlet.ServletRequest`<br />, `jakarta.servlet.ServletResponse` | 请求/响应对象 |
+| `jakarta.servlet.http.HttpSession` | 强制存在会话。因此，这样的参数永远不会为 `null`<br /> 。 |
+| `java.io.InputStream`<br />, `java.io.Reader` | 用于访问由 Servlet API 公开的原始请求正文。 |
+| `java.io.OutputStream`<br />, `java.io.Writer` | 用于访问由 Servlet API 公开的原始响应正文。 |
+| `@PathVariable` | 接收路径参数注解 |
+| `@RequestParam` | 用于访问 Servlet 请求参数，包括多部分文件。参数值将转换为声明的方法参数类型。 |
+| `@RequestHeader` | 用于访问请求标头。标头值将转换为声明的方法参数类型。 |
+| `@CookieValue` | 用于访问Cookie。Cookie 值将转换为声明的方法参数类型。 |
+| `@RequestBody` | 用于访问 HTTP 请求正文。正文内容通过使用 `HttpMessageConverter`<br /> 实现转换为声明的方法参数类型。 |
+| `java.util.Map`<br />, `org.springframework.ui.Model`<br />, `org.springframework.ui.ModelMap` | 共享域对象，并在视图呈现过程中向模板公开。 |
+| `Errors`<br />, `BindingResult` | 验证和数据绑定中的错误信息获取对象！ |
+
+```java
+@Controller
+@RequestMapping("api")
+@ResponseBody
+public class ApiController {
+    @Autowired
+    private ServletContext servletContext;
+    public void data(HttpServletResponse response,
+                     HttpServletRequest request,
+                     HttpSession session) {
+        ServletContext servletContext = request.getServletContext();
+        ServletContext servletContext1 = session.getServletContext();
+    }
+}
+```
+
+## 2.6 共享域对象操作
+### 2.6.1 属性共享域作用
+在 JavaWeb 中，共享域指的是在 Servlet 中存储数据，以便在同一 Web 应用程序的多个组件中进行共享和访问。常见的共享域有四种：`ServletContext`、`HttpSession`、`HttpServletRequest`、`PageContext`。
+
+1. `ServletContext` 共享域：`ServletContext` 对象可以在整个 Web 应用程序中共享数据，是最大的共享域。一般可以用于保存整个 Web 应用程序的全局配置信息，以及所有用户都共享的数据。在 `ServletContext` 中保存的数据是线程安全的。（全局）
+2. `HttpSession` 共享域：`HttpSession` 对象可以在同一用户发出的多个请求之间共享数据，但只能在同一个会话中使用。比如，可以将用户登录状态保存在 `HttpSession` 中，让用户在多个页面间保持登录状态。（用户/会话）
+3. `HttpServletRequest` 共享域：`HttpServletRequest` 对象可以在同一个请求的多个处理器方法之间共享数据。比如，可以将请求的参数和属性存储在 `HttpServletRequest` 中，让处理器方法之间可以访问这些数据。（请求）
+4. `PageContext` 共享域：`PageContext` 对象是在 JSP 页面Servlet 创建时自动创建的。它可以在 JSP 的各个作用域中共享数据，包括`pageScope`、`requestScope`、`sessionScope`、`applicationScope` 等作用域。（jsp）
+
+共享域的作用是提供了方便实用的方式在同一 Web 应用程序的多个组件之间传递数据，并且可以将数据保存在不同的共享域中，根据需要进行选择和使用。<br />![](https://cdn.nlark.com/yuque/0/2023/webp/25941432/1698302943121-bd5e4049-9c74-46a6-b7e0-31d26141b976.webp#averageHue=%23f3f3f3&clientId=u00ca388b-4f30-4&from=paste&id=u94844578&originHeight=352&originWidth=542&originalType=url&ratio=1.5&rotation=0&showTitle=false&status=done&style=none&taskId=u7095e051-6e36-408f-b0f7-c853dc81b82&title=)
+### 2.6.2 Request级别属性共享域
+
+1. 使用 Model 类型的形参
+```java
+public void data1(Model model) {
+	model.addAttribute("key", "value");
+}
+```
+
+2. 使用 ModelMap 类型的形参
+```java
+public void data1(ModelMap model) {
+    model.addAttribute("key", "value");
+}
+```
+
+3. 使用 Map 类型的形参
+```java
+public void data1(Map map) {
+    map.put("key", "value");
+}
+```
+
+4.  使用 ModelAndView 对象
+```java
+public ModelAndView data1() {
+    ModelAndView modelAndView = new ModelAndView();
+    modelAndView.addObject("key", "value");
+    modelAndView.setViewName("视图名 页面名称");
+    return modelAndView;
+}
+```
+
+5. 原生api
+```java
+public void data(HttpServletRequest request, HttpSession session) {
+	request.setAttribute("requestScopeMessageOriginal", "i am very happy[original]");
+}
+```
+
+### 2.6.3 Session级别属性共享域
+```java
+@RequestMapping("/attr/session")
+@ResponseBody
+public String testAttrSession(HttpSession session) {
+    //直接对session对象操作,即对会话范围操作!
+    return "target";
+}
+```
+
+### 2.6.4 Application 级别属性共享域
+ 解释：springmvc会在初始化容器的时候，将servletContext对象存储到ioc容器中
+```java
+@Autowired
+private ServletContext servletContext;
+
+@RequestMapping("/attr/application")
+@ResponseBody
+public String attrApplication() {
+    
+    servletContext.setAttribute("appScopeMsg", "i am hungry...");
+    
+    return "target";
+}
+```
