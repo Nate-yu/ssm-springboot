@@ -1,5 +1,6 @@
 package com.example.spring.ioc;
 
+import com.example.spring.ioc.bean.User;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -21,6 +22,11 @@ public class Spring01IocApplication {
             System.out.println(beanDefinitionName);
         }*/
         SpringApplication.run(Spring01IocApplication.class, args);
+//        ConfigurableApplicationContext ioc = SpringApplication.run(Spring01IocApplication.class, args);
+//        System.out.println("ioc: " + ioc);
+//        System.out.println("===============================");
+//        User bean = ioc.getBean(User.class);
+//        System.out.println("运行："+bean);
     }
 
 }
