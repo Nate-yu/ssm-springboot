@@ -2,8 +2,8 @@ package com.example.spring.aop;
 
 import com.example.spring.aop.calculator.MathCalculator;
 import com.example.spring.aop.calculator.impl.MathCalculatorImpl;
-import com.example.spring.aop.dynamic.DynamicProxy;
-import com.example.spring.aop.statics.CalculatorStaticProxy;
+import com.example.spring.aop.proxy.dynamic.DynamicProxy;
+import com.example.spring.aop.proxy.statics.CalculatorStaticProxy;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 

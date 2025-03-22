@@ -1,4 +1,4 @@
-package com.example.spring.aop.statics;
+package com.example.spring.aop.proxy.statics;
 
 import com.example.spring.aop.calculator.MathCalculator;
 import lombok.Data;

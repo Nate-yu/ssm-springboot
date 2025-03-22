@@ -1,4 +1,4 @@
-package com.example.spring.aop.dynamic;
+package com.example.spring.aop.proxy.dynamic;
 
 import com.example.spring.aop.log.LogUtils;
 
