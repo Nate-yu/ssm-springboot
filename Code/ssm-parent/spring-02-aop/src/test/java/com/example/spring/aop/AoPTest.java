@@ -23,6 +23,6 @@ public class AoPTest {
     void test() {
 
         System.out.println("calculator = " + calculator);
-        System.out.println(calculator.divide(1, 0));
+//        System.out.println(calculator.divide(1, 0));
     }
 }

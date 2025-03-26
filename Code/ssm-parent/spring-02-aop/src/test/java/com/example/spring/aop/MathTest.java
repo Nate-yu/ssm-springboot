@@ -19,7 +19,7 @@ public class MathTest {
         MathCalculator proxyInstance = (MathCalculator) DynamicProxy.getProxyInstance(new MathCalculatorImpl());
         proxyInstance.add(1,2);
         System.out.println("=========================");
-        proxyInstance.divide(1,0);
+//        proxyInstance.divide(1,0);
     }
 
     @Test
