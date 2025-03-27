@@ -2,6 +2,8 @@ package com.example.rest.crud.dao;
 
 import com.example.rest.crud.bean.Employee;
 
+import java.util.List;
+
 public interface EmployeeDAO {
     /**
      * 按照id查员工
@@ -28,4 +30,10 @@ public interface EmployeeDAO {
      * @param id
      */
     public void deleteEmpById(Long id);
+
+    /**
+     * 查询所有员工的信息
+     * @return
+     */
+    List<Employee> getAllEmp();
 }

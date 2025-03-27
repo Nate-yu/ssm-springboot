@@ -7,6 +7,8 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class EmployeeDAOImpl implements EmployeeDAO {
     @Autowired
@@ -51,5 +53,12 @@ public class EmployeeDAOImpl implements EmployeeDAO {
         String sql = "delete from employee where id = ?";
         int update = jdbcTemplate.update(sql, id);
         System.out.println("删除成功，影响行数：" + update);
+    }
+
+    @Override
+    public List<Employee> getAllEmp() {
+        String sql = "select id,name,age,email,gender,address,salary from employee";
+        List<Employee> employees = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Employee.class));
+        return employees;
     }
 }
