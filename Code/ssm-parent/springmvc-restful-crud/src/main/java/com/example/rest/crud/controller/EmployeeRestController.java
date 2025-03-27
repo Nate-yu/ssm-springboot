@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@RequestMapping("/api/v1")
+@CrossOrigin // 解决跨域问题，相当于服务器给浏览器的响应头中添加字段：Access-Control-Allow-Origin: *
 @RestController
 public class EmployeeRestController {
     @Autowired
