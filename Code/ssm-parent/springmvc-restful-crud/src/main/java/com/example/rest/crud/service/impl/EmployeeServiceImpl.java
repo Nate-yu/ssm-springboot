@@ -2,6 +2,8 @@ package com.example.rest.crud.service.impl;
 
 import com.example.rest.crud.bean.Employee;
 import com.example.rest.crud.dao.EmployeeDAO;
+import com.example.rest.crud.exception.BizException;
+import com.example.rest.crud.exception.BizExceptionEnum;
 import com.example.rest.crud.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,7 +36,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         // 判断传过来的对象中是否存在空值
         Long id = employee.getId();
         if (id == null) {
-            return;
+            throw new BizException(BizExceptionEnum.ORDER_NOT_EXIST);
         }
         Employee empById = employeeDAO.getEmpById(id);
         if (StringUtils.hasText(employee.getName())) {
