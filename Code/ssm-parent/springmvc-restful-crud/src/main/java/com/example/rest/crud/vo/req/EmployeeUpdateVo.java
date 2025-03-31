@@ -1,4 +1,4 @@
-package com.example.rest.crud.bean;
+package com.example.rest.crud.vo.req;
 
 import com.example.rest.crud.annotation.Gender;
 import jakarta.validation.constraints.*;
@@ -7,7 +7,8 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class Employee {
+public class EmployeeUpdateVo {
+    @NotNull(message = "员工id不能为空")
     private Long id;
     private String name;
     private Integer age;
