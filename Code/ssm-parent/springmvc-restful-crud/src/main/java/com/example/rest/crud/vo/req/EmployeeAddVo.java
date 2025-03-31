@@ -1,10 +1,14 @@
 package com.example.rest.crud.vo.req;
 
 import com.example.rest.crud.annotation.Gender;
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Date;
+
 @Data
 public class EmployeeAddVo {
 
@@ -23,4 +27,7 @@ public class EmployeeAddVo {
     private String gender;
     private String address;
     private BigDecimal salary;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date birth;
 }

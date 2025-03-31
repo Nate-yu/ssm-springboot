@@ -23,14 +23,15 @@ public class EmployeeDAOImpl implements EmployeeDAO {
 
     @Override
     public void addEmp(Employee employee) {
-        String sql = "insert into employee(name, age, email, gender, address, salary) values (?, ?, ?, ?, ?, ?)";
+        String sql = "insert into employee(name, age, email, gender, address, salary,birth) values (?, ?, ?, ?, ?, ?, ?)";
         int update = jdbcTemplate.update(sql,
                 employee.getName(),
                 employee.getAge(),
                 employee.getEmail(),
                 employee.getGender(),
                 employee.getAddress(),
-                employee.getSalary());
+                employee.getSalary(),
+                employee.getBirth());
         System.out.println("新增成功，影响行数：" + update);
     }
 

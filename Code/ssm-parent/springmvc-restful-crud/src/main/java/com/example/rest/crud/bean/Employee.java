@@ -1,10 +1,10 @@
 package com.example.rest.crud.bean;
 
-import com.example.rest.crud.annotation.Gender;
-import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 @Data
 public class Employee {
@@ -15,4 +15,5 @@ public class Employee {
     private String gender;
     private String address;
     private BigDecimal salary;
+    private Date birth;
 }

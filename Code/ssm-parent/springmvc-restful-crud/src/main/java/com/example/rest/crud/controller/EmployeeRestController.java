@@ -34,7 +34,9 @@ public class EmployeeRestController {
     @GetMapping("/employee/{id}")
     public R get(@PathVariable("id") Long id) {
         Employee emp = employeeService.getEmpById(id);
-        return R.success(emp);
+        EmployRespVo employRespVo = new EmployRespVo();
+        BeanUtils.copyProperties(emp, employRespVo);
+        return R.success(employRespVo);
     }
 
     /**
@@ -42,7 +44,7 @@ public class EmployeeRestController {
      * @param vo
      */
     @PostMapping ("/employee")
-    public R save(@Valid EmployeeAddVo vo) {
+    public R save(@RequestBody @Valid EmployeeAddVo vo) {
         // 将前端数据封装的vo转换为数据库的do
         Employee employee = new Employee();
         // 属性对转
@@ -50,17 +52,6 @@ public class EmployeeRestController {
         // 调用业务层方法
         employeeService.addEmp(employee);
         return R.success();
-//        if (!result.hasErrors()) {
-//
-//        }
-//        // 校验出错
-//        Map<String, String> errorsMap = new HashMap<>();
-//        for (FieldError fieldError : result.getFieldErrors()) {
-//            String field = fieldError.getField();
-//            String message = fieldError.getDefaultMessage();
-//            errorsMap.put(field, message);
-//        }
-//        return R.error(500, "校验失败", errorsMap);
     }
 
     /**
