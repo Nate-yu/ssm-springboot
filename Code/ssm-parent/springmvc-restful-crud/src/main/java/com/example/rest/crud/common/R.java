@@ -38,7 +38,7 @@ public class R<T> {
         return r;
     }
 
-    public static R error(Integer code, String message, String data) {
+    public static R error(Integer code, String message, Object data) {
         R r = new R<>();
         r.setCode(code);
         r.setMessage(message);

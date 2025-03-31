@@ -3,10 +3,17 @@ package com.example.rest.crud.controller;
 import com.example.rest.crud.bean.Employee;
 import com.example.rest.crud.common.R;
 import com.example.rest.crud.service.EmployeeService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 @RequestMapping("/api/v1")
 @CrossOrigin // 解决跨域问题，相当于服务器给浏览器的响应头中添加字段：Access-Control-Allow-Origin: *
 @RestController
@@ -30,9 +37,20 @@ public class EmployeeRestController {
      * @param employee
      */
     @PostMapping ("/employee")
-    public R save(Employee employee) {
+    public R save(@Valid Employee employee/*, BindingResult result*/) {
         employeeService.addEmp(employee);
         return R.success();
+//        if (!result.hasErrors()) {
+//
+//        }
+//        // 校验出错
+//        Map<String, String> errorsMap = new HashMap<>();
+//        for (FieldError fieldError : result.getFieldErrors()) {
+//            String field = fieldError.getField();
+//            String message = fieldError.getDefaultMessage();
+//            errorsMap.put(field, message);
+//        }
+//        return R.error(500, "校验失败", errorsMap);
     }
 
     /**
