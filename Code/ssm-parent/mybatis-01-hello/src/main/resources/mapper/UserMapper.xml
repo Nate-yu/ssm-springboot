@@ -7,7 +7,13 @@
     <delete id="deleteUserById">
         delete from user where id = #{id}
     </delete>
-
+<!--    自定义映射规则-->
+    <resultMap id="User" type="com.example.mybatis.hello.bean.User">
+        <id column="id" property="id"/>
+        <result column="user_name" property="userName"/>
+        <result column="age" property="age"/>
+        <result column="user_salary" property="userSalary"/>
+    </resultMap>
 
     <select id="selectUserById" resultType="com.example.mybatis.hello.bean.User">
         select id, user_name as userName, age, user_salary as userSalary from user where id = #{id}
