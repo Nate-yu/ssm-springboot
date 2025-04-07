@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.mybatis.hello.mapper.UserDynamicSQLMapper">
+
+    <sql id="column_names">
+        id, user_name userName, age, user_salary userSalary
+    </sql>
+    <update id="updateUser">
+        update user
+        <set>
+            <if test="userName != null and userName != ''">
+                user_name = #{userName}
+            </if>
+            <if test="age != null and age != ''">
+                age = #{age}
+            </if>
+            <if test="userSalary != null and userSalary != ''">
+                user_salary = #{userSalary}
+            </if>
+        </set>
+        <where>
+            id = #{id}
+        </where>
+    </update>
+    <select id="selectUserByUserNameAndUserSalary" resultType="com.example.mybatis.hello.bean.User">
+        select
+        <include refid="column_names"/>
+        from user
+        <where>
+            <if test="userName != null and userName != ''">
+                user_name = #{userName}
+            </if>
+            <if test="userSalary != null and userSalary != ''">
+                user_salary = #{userSalary}
+            </if>
+        </where>
+    </select>
+</mapper>
