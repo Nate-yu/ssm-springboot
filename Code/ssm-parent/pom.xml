@@ -32,6 +32,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <modules>
@@ -41,5 +47,6 @@
         <module>springmvc-01-helloworld</module>
         <module>springmvc-restful-crud</module>
         <module>mybatis-01-hello</module>
+        <module>springboot-demo</module>
     </modules>
 </project>
